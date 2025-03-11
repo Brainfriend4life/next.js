@@ -676,5 +676,6 @@
   "675": "Expected `generateMetadata` not to block the application shell but it did.",
   "676": "Invariant: missing internal router-server-methods this is an internal bug",
   "677": "Failed to find Server Action \"%s\". This request might be from an older or newer deployment.%s\\nRead more: https://nextjs.org/docs/messages/failed-to-find-server-action",
-  "678": "This function cannot be used in the edge runtime"
+  "678": "This function cannot be used in the edge runtime",
+  "679": "Action handler not found in action module"
 }
