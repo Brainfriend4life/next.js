@@ -25,7 +25,7 @@ use crate::{
     },
     side_effect_optimization::reference::EcmascriptModulePartReference,
     AnalyzeEcmascriptModuleResult, EcmascriptAnalyzable, EcmascriptModuleContent,
-    EcmascriptModuleContentOptions, SpecifiedModuleType,
+    EcmascriptModuleContentOptions, EcmascriptOptions, SpecifiedModuleType,
 };
 
 /// A module derived from an original ecmascript module that only contains all
@@ -35,13 +35,23 @@ use crate::{
 pub struct EcmascriptModuleFacadeModule {
     pub module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
     pub ty: ModulePart,
+    pub options: ResolvedVc<EcmascriptOptions>,
 }
 
 #[turbo_tasks::value_impl]
 impl EcmascriptModuleFacadeModule {
     #[turbo_tasks::function]
-    pub fn new(module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>, ty: ModulePart) -> Vc<Self> {
-        EcmascriptModuleFacadeModule { module, ty }.cell()
+    pub fn new(
+        module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
+        ty: ModulePart,
+        options: ResolvedVc<EcmascriptOptions>,
+    ) -> Vc<Self> {
+        EcmascriptModuleFacadeModule {
+            module,
+            ty,
+            options,
+        }
+        .cell()
     }
 
     #[turbo_tasks::function]
@@ -60,6 +70,11 @@ impl EcmascriptModuleFacadeModule {
             import_externals,
         }
         .cell())
+    }
+
+    #[turbo_tasks::function]
+    pub fn options(&self) -> Vc<EcmascriptOptions> {
+        *self.options
     }
 }
 
@@ -84,9 +99,13 @@ impl EcmascriptModuleFacadeModule {
                 (
                     result.esm_evaluation_references,
                     vec![
-                        EcmascriptModulePartReference::new_part(*self.module, ModulePart::locals())
-                            .to_resolved()
-                            .await?,
+                        EcmascriptModulePartReference::new_part(
+                            *self.module,
+                            ModulePart::locals(),
+                            *self.options,
+                        )
+                        .to_resolved()
+                        .await?,
                     ],
                 )
             }
@@ -103,35 +122,51 @@ impl EcmascriptModuleFacadeModule {
                 (
                     result.esm_reexport_references,
                     vec![
-                        EcmascriptModulePartReference::new_part(*self.module, ModulePart::locals())
-                            .to_resolved()
-                            .await?,
+                        EcmascriptModulePartReference::new_part(
+                            *self.module,
+                            ModulePart::locals(),
+                            *self.options,
+                        )
+                        .to_resolved()
+                        .await?,
                     ],
                 )
             }
             ModulePart::Facade => (
                 EsmAssetReferences::empty().to_resolved().await?,
                 vec![
-                    EcmascriptModulePartReference::new_part(*self.module, ModulePart::evaluation())
-                        .to_resolved()
-                        .await?,
-                    EcmascriptModulePartReference::new_part(*self.module, ModulePart::exports())
-                        .to_resolved()
-                        .await?,
+                    EcmascriptModulePartReference::new_part(
+                        *self.module,
+                        ModulePart::evaluation(),
+                        *self.options,
+                    )
+                    .to_resolved()
+                    .await?,
+                    EcmascriptModulePartReference::new_part(
+                        *self.module,
+                        ModulePart::exports(),
+                        *self.options,
+                    )
+                    .to_resolved()
+                    .await?,
                 ],
             ),
             ModulePart::RenamedNamespace { .. } => (
                 EsmAssetReferences::empty().to_resolved().await?,
                 vec![
-                    EcmascriptModulePartReference::new(*self.module)
-                        .to_resolved()
-                        .await?,
+                    EcmascriptModulePartReference::new_part(
+                        *self.module,
+                        ModulePart::evaluation(),
+                        *self.options,
+                    )
+                    .to_resolved()
+                    .await?,
                 ],
             ),
             ModulePart::RenamedExport { .. } => (
                 EsmAssetReferences::empty().to_resolved().await?,
                 vec![
-                    EcmascriptModulePartReference::new(*self.module)
+                    EcmascriptModulePartReference::new(*self.module, *self.options)
                         .to_resolved()
                         .await?,
                 ],
@@ -210,7 +245,8 @@ impl EcmascriptAnalyzable for EcmascriptModuleFacadeModule {
         chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
         async_module_info: Option<ResolvedVc<AsyncModuleInfo>>,
     ) -> Result<Vc<EcmascriptModuleContent>> {
-        let (esm_references, part_references) = self.await?.specific_references().await?;
+        let this = self.await?;
+        let (esm_references, part_references) = this.specific_references().await?;
 
         Ok(EcmascriptModuleContent::new(
             EcmascriptModuleContentOptions {
@@ -228,6 +264,8 @@ impl EcmascriptAnalyzable for EcmascriptModuleFacadeModule {
                 original_source_map: OptionStringifiedSourceMap::none().to_resolved().await?,
                 exports: self.get_exports().to_resolved().await?,
                 async_module_info,
+                module: this.module,
+                unused_export_removal: this.options.await?.unused_export_removal,
             },
         ))
     }
@@ -260,6 +298,7 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleFacadeModule {
                                         EcmascriptModulePartReference::new_part(
                                             *self.module,
                                             ModulePart::locals(),
+                                            *self.options,
                                         )
                                         .to_resolved()
                                         .await?,
@@ -307,6 +346,7 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleFacadeModule {
                                 EcmascriptModulePartReference::new_part(
                                     *self.module,
                                     ModulePart::exports(),
+                                    *self.options,
                                 )
                                 .to_resolved()
                                 .await?,
@@ -317,9 +357,13 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleFacadeModule {
                     );
                 }
                 star_exports.push(ResolvedVc::upcast(
-                    EcmascriptModulePartReference::new_part(*self.module, ModulePart::exports())
-                        .to_resolved()
-                        .await?,
+                    EcmascriptModulePartReference::new_part(
+                        *self.module,
+                        ModulePart::exports(),
+                        *self.options,
+                    )
+                    .to_resolved()
+                    .await?,
                 ));
             }
             ModulePart::RenamedExport {
@@ -330,7 +374,7 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleFacadeModule {
                     export.clone(),
                     EsmExport::ImportedBinding(
                         ResolvedVc::upcast(
-                            EcmascriptModulePartReference::new(*self.module)
+                            EcmascriptModulePartReference::new(*self.module, *self.options)
                                 .to_resolved()
                                 .await?,
                         ),
@@ -343,7 +387,7 @@ impl EcmascriptChunkPlaceable for EcmascriptModuleFacadeModule {
                 exports.insert(
                     export.clone(),
                     EsmExport::ImportedNamespace(ResolvedVc::upcast(
-                        EcmascriptModulePartReference::new(*self.module)
+                        EcmascriptModulePartReference::new(*self.module, *self.options)
                             .to_resolved()
                             .await?,
                     )),

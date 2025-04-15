@@ -10,7 +10,7 @@ use turbopack_core::{
     reference::ModuleReference,
     resolve::{
         pattern::{read_matches, Pattern, PatternMatch},
-        ModuleResolveResult, RequestKey,
+        ExportUsage, ModuleResolveResult, RequestKey,
     },
     source::Source,
 };
@@ -33,11 +33,14 @@ impl PackageJsonReference {
 impl ModuleReference for PackageJsonReference {
     #[turbo_tasks::function]
     async fn resolve_reference(&self) -> Result<Vc<ModuleResolveResult>> {
-        Ok(*ModuleResolveResult::module(ResolvedVc::upcast(
-            RawModule::new(Vc::upcast(FileSource::new(*self.package_json)))
-                .to_resolved()
-                .await?,
-        )))
+        Ok(*ModuleResolveResult::module(
+            ResolvedVc::upcast(
+                RawModule::new(Vc::upcast(FileSource::new(*self.package_json)))
+                    .to_resolved()
+                    .await?,
+            ),
+            ExportUsage::All,
+        ))
     }
 }
 
@@ -70,6 +73,7 @@ impl DirAssetReference {
 async fn resolve_reference_from_dir(
     parent_path: Vc<FileSystemPath>,
     path: Vc<Pattern>,
+    export: ExportUsage,
 ) -> Result<Vc<ModuleResolveResult>> {
     let path_ref = path.await?;
     let (abs_path, rel_path) = path_ref.split_could_match("/ROOT/");
@@ -144,6 +148,7 @@ async fn resolve_reference_from_dir(
     Ok(*ModuleResolveResult::modules_with_affecting_sources(
         results,
         affecting_sources,
+        export,
     ))
 }
 
@@ -155,6 +160,7 @@ impl ModuleReference for DirAssetReference {
         Ok(resolve_reference_from_dir(
             parent_path.resolve().await?,
             *self.path,
+            ExportUsage::All,
         ))
     }
 }

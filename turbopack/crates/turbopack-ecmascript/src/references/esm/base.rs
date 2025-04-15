@@ -24,7 +24,8 @@ use turbopack_core::{
     resolve::{
         origin::{ResolveOrigin, ResolveOriginExt},
         parse::Request,
-        ExternalType, ModulePart, ModuleResolveResult, ModuleResolveResultItem, RequestKey,
+        ExportUsage, ExternalType, ModulePart, ModuleResolveResult, ModuleResolveResultItem,
+        RequestKey,
     },
 };
 use turbopack_resolve::ecmascript::esm_resolve;
@@ -198,6 +199,7 @@ impl ModuleReference for EsmAssetReference {
                             ModuleResolveResultItem::Ignore,
                         )]),
                         affecting_sources: Default::default(),
+                        export: ExportUsage::Evaluation,
                     }
                     .cell());
                 }
@@ -211,11 +213,20 @@ impl ModuleReference for EsmAssetReference {
                         ResolvedVc::try_downcast_type(self.origin)
                             .expect("EsmAssetReference origin should be a EcmascriptModuleAsset");
 
-                    return Ok(*ModuleResolveResult::module(ResolvedVc::upcast(
-                        EcmascriptModulePartAsset::select_part(*module, part.clone())
-                            .to_resolved()
-                            .await?,
-                    )));
+                    let export = match part {
+                        ModulePart::Export(rc_str) => ExportUsage::Named(rc_str.clone()),
+                        ModulePart::Evaluation => ExportUsage::Evaluation,
+                        _ => ExportUsage::All,
+                    };
+
+                    return Ok(*ModuleResolveResult::module(
+                        ResolvedVc::upcast(
+                            EcmascriptModulePartAsset::select_part(*module, part.clone())
+                                .to_resolved()
+                                .await?,
+                        ),
+                        export,
+                    ));
                 }
 
                 bail!("export_name is required for part import")

@@ -34,6 +34,7 @@ use crate::{
     magic_identifier,
     parse::ParseResult,
     runtime_functions::{TURBOPACK_DYNAMIC, TURBOPACK_ESM},
+    simple_tree_shake::is_export_used,
     tree_shake::asset::EcmascriptModulePartAsset,
     EcmascriptModuleAsset,
 };
@@ -538,9 +539,11 @@ impl EsmExports {
 impl EsmExports {
     pub async fn code_generation(
         self: Vc<Self>,
-        _module_graph: Vc<ModuleGraph>,
+        module_graph: Vc<ModuleGraph>,
         chunking_context: Vc<Box<dyn ChunkingContext>>,
+        module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
         parsed: Option<Vc<ParseResult>>,
+        unused_export_removal: bool,
     ) -> Result<CodeGeneration> {
         let expanded = self.expand_exports().await?;
         let parsed = if let Some(parsed) = parsed {
@@ -564,6 +567,12 @@ impl EsmExports {
 
         let mut props = Vec::new();
         for (exported, local) in &expanded.exports {
+            if unused_export_removal
+                && !*is_export_used(module_graph, *module, exported.clone()).await?
+            {
+                continue;
+            }
+
             let expr = match local {
                 EsmExport::Error => Some(quote!(
                     "(() => { throw new Error(\"Failed binding. See build errors!\"); })" as Expr,

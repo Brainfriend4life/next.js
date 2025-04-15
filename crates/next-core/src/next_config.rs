@@ -750,6 +750,8 @@ pub struct ExperimentalConfig {
     turbopack_persistent_caching: Option<bool>,
     turbopack_source_maps: Option<bool>,
     turbopack_tree_shaking: Option<bool>,
+    /// Defaults to false in development mode, true in production mode.
+    turbopack_remove_unused_exports: Option<bool>,
 }
 
 #[derive(
@@ -1485,6 +1487,15 @@ impl NextConfig {
             None => Some(TreeShakingMode::ReexportsOnly),
         })
         .cell()
+    }
+
+    #[turbo_tasks::function]
+    pub fn turbopack_remove_unused_exports(&self, is_development: bool) -> Vc<bool> {
+        Vc::cell(
+            self.experimental
+                .turbopack_remove_unused_exports
+                .unwrap_or(!is_development),
+        )
     }
 
     #[turbo_tasks::function]

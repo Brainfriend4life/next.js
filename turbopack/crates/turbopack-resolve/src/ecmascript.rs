@@ -11,7 +11,7 @@ use turbopack_core::{
         },
         origin::{ResolveOrigin, ResolveOriginExt},
         parse::Request,
-        resolve, ModuleResolveResult, ResolveResult,
+        resolve, ExportUsage, ModulePart, ModuleResolveResult, ResolveResult,
     },
 };
 /// Retrieves the [ResolutionConditions] of the "into" and "in" package resolution options, so that
@@ -45,19 +45,31 @@ pub fn apply_esm_specific_options(
     options: Vc<ResolveOptions>,
     reference_type: Value<ReferenceType>,
 ) -> Vc<ResolveOptions> {
-    apply_esm_specific_options_internal(
-        options,
-        matches!(
-            reference_type.into_value(),
-            ReferenceType::EcmaScriptModules(EcmaScriptModulesReferenceSubType::ImportWithType(_))
-        ),
-    )
+    let reference_type = reference_type.into_value();
+    let clear_extensions = matches!(
+        reference_type,
+        ReferenceType::EcmaScriptModules(EcmaScriptModulesReferenceSubType::ImportWithType(_))
+    );
+
+    let export_usage = match reference_type {
+        ReferenceType::EcmaScriptModules(EcmaScriptModulesReferenceSubType::ImportPart(part)) => {
+            match part {
+                ModulePart::Export(name) => ExportUsage::Named(name.clone()),
+                ModulePart::Evaluation => ExportUsage::Evaluation,
+                _ => ExportUsage::All,
+            }
+        }
+        _ => ExportUsage::All,
+    };
+
+    apply_esm_specific_options_internal(options, clear_extensions, export_usage)
 }
 
 #[turbo_tasks::function]
 async fn apply_esm_specific_options_internal(
     options: Vc<ResolveOptions>,
     clear_extensions: bool,
+    export_usage: ExportUsage,
 ) -> Result<Vc<ResolveOptions>> {
     let mut options: ResolveOptions = options.owned().await?;
     // TODO set fully_specified when in strict ESM mode
@@ -72,6 +84,7 @@ async fn apply_esm_specific_options_internal(
     }
 
     options.parse_data_uris = true;
+    options.export = export_usage;
 
     Ok(options.cell())
 }

@@ -10,7 +10,7 @@ use turbopack_core::{
     module::Module,
     module_graph::ModuleGraph,
     reference::{ModuleReference, ModuleReferences, SingleChunkableModuleReference},
-    resolve::{origin::ResolveOrigin, ModulePart},
+    resolve::{origin::ResolveOrigin, ExportUsage, ModulePart},
 };
 
 use super::{
@@ -112,6 +112,8 @@ impl EcmascriptAnalyzable for EcmascriptModulePartAsset {
                 original_source_map: analyze_ref.source_map,
                 exports: analyze_ref.exports,
                 async_module_info,
+                module: ResolvedVc::upcast(module.full_module),
+                unused_export_removal: module.full_module.options().await?.unused_export_removal,
             },
         ))
     }
@@ -204,6 +206,7 @@ impl EcmascriptModulePartAsset {
                             EcmascriptModuleFacadeModule::new(
                                 **final_module,
                                 ModulePart::renamed_export(new_export.clone(), export.clone()),
+                                module.options(),
                             )
                             .to_resolved()
                             .await?,
@@ -214,6 +217,7 @@ impl EcmascriptModulePartAsset {
                         EcmascriptModuleFacadeModule::new(
                             **final_module,
                             ModulePart::renamed_namespace(export.clone()),
+                            module.options(),
                         )
                         .to_resolved()
                         .await?,
@@ -323,12 +327,20 @@ impl Module for EcmascriptModulePartAsset {
     #[turbo_tasks::function]
     async fn references(&self) -> Result<Vc<ModuleReferences>> {
         let part_dep = |part: ModulePart| -> Vc<Box<dyn ModuleReference>> {
+            let export = match &part {
+                ModulePart::Evaluation => ExportUsage::Evaluation,
+                // This does not point to the real export, so we use evaluation.
+                ModulePart::Internal(..) => ExportUsage::Evaluation,
+                ModulePart::Export(export) => ExportUsage::Named(export.clone()),
+                _ => ExportUsage::All,
+            };
             Vc::upcast(SingleChunkableModuleReference::new(
                 Vc::upcast(EcmascriptModulePartAsset::new_with_resolved_part(
                     *self.full_module,
                     part,
                 )),
                 Vc::cell("part reference".into()),
+                export,
             ))
         };
 

@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{Instrument, Level};
 use turbo_rcstr::RcStr;
 use turbo_tasks::{
-    trace::TraceRawVcs, FxIndexMap, FxIndexSet, NonLocalValue, ReadRef, ResolvedVc, SliceMap,
-    TaskInput, TryJoinIterExt, Value, ValueToString, Vc,
+    debug::ValueDebugFormat, trace::TraceRawVcs, FxIndexMap, FxIndexSet, NonLocalValue, ReadRef,
+    ResolvedVc, SliceMap, TaskInput, TryJoinIterExt, Value, ValueToString, Vc,
 };
 use turbo_tasks_fs::{
     util::normalize_request, FileSystemEntryType, FileSystemPath, RealPathResult,
@@ -103,11 +103,35 @@ impl ModuleResolveResultItem {
     }
 }
 
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Hash,
+    TraceRawVcs,
+    Serialize,
+    Deserialize,
+    Eq,
+    PartialEq,
+    ValueDebugFormat,
+    NonLocalValue,
+    TaskInput,
+)]
+pub enum ExportUsage {
+    Named(RcStr),
+    /// This means the whole content of the module is used.
+    #[default]
+    All,
+    /// Only side effects are used.
+    Evaluation,
+}
+
 #[turbo_tasks::value(shared)]
 #[derive(Clone)]
 pub struct ModuleResolveResult {
     pub primary: SliceMap<RequestKey, ModuleResolveResultItem>,
     pub affecting_sources: Box<[ResolvedVc<Box<dyn Source>>]>,
+    pub export: ExportUsage,
 }
 
 impl ModuleResolveResult {
@@ -115,6 +139,7 @@ impl ModuleResolveResult {
         ModuleResolveResult {
             primary: Default::default(),
             affecting_sources: Default::default(),
+            export: ExportUsage::All,
         }
         .resolved_cell()
     }
@@ -125,22 +150,25 @@ impl ModuleResolveResult {
         ModuleResolveResult {
             primary: Default::default(),
             affecting_sources: affecting_sources.into_boxed_slice(),
+            export: ExportUsage::All,
         }
         .resolved_cell()
     }
 
-    pub fn module(module: ResolvedVc<Box<dyn Module>>) -> ResolvedVc<Self> {
-        Self::module_with_key(RequestKey::default(), module)
+    pub fn module(module: ResolvedVc<Box<dyn Module>>, export: ExportUsage) -> ResolvedVc<Self> {
+        Self::module_with_key(RequestKey::default(), module, export)
     }
 
     pub fn module_with_key(
         request_key: RequestKey,
         module: ResolvedVc<Box<dyn Module>>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ModuleResolveResult {
             primary: vec![(request_key, ModuleResolveResultItem::Module(module))]
                 .into_boxed_slice(),
             affecting_sources: Default::default(),
+            export,
         }
         .resolved_cell()
     }
@@ -156,12 +184,14 @@ impl ModuleResolveResult {
             )]
             .into_boxed_slice(),
             affecting_sources: Default::default(),
+            export: ExportUsage::All,
         }
         .resolved_cell()
     }
 
     pub fn modules(
         modules: impl IntoIterator<Item = (RequestKey, ResolvedVc<Box<dyn Module>>)>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ModuleResolveResult {
             primary: modules
@@ -169,6 +199,7 @@ impl ModuleResolveResult {
                 .map(|(k, v)| (k, ModuleResolveResultItem::Module(v)))
                 .collect(),
             affecting_sources: Default::default(),
+            export,
         }
         .resolved_cell()
     }
@@ -176,6 +207,7 @@ impl ModuleResolveResult {
     pub fn modules_with_affecting_sources(
         modules: impl IntoIterator<Item = (RequestKey, ResolvedVc<Box<dyn Module>>)>,
         affecting_sources: Vec<ResolvedVc<Box<dyn Source>>>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ModuleResolveResult {
             primary: modules
@@ -183,6 +215,7 @@ impl ModuleResolveResult {
                 .map(|(k, v)| (k, ModuleResolveResultItem::Module(v)))
                 .collect(),
             affecting_sources: affecting_sources.into_boxed_slice(),
+            export,
         }
         .resolved_cell()
     }
@@ -211,6 +244,7 @@ impl ModuleResolveResult {
 pub struct ModuleResolveResultBuilder {
     pub primary: FxIndexMap<RequestKey, ModuleResolveResultItem>,
     pub affecting_sources: Vec<ResolvedVc<Box<dyn Source>>>,
+    pub export: ExportUsage,
 }
 
 impl From<ModuleResolveResultBuilder> for ModuleResolveResult {
@@ -218,6 +252,7 @@ impl From<ModuleResolveResultBuilder> for ModuleResolveResult {
         ModuleResolveResult {
             primary: v.primary.into_iter().collect(),
             affecting_sources: v.affecting_sources.into_boxed_slice(),
+            export: v.export,
         }
     }
 }
@@ -226,6 +261,7 @@ impl From<ModuleResolveResult> for ModuleResolveResultBuilder {
         ModuleResolveResultBuilder {
             primary: IntoIterator::into_iter(v.primary).collect(),
             affecting_sources: v.affecting_sources.into_vec(),
+            export: v.export,
         }
     }
 }
@@ -266,6 +302,7 @@ impl ModuleResolveResult {
                 .copied()
                 .chain(std::iter::once(source))
                 .collect(),
+            export: self.export.clone(),
         }
         .cell())
     }
@@ -283,6 +320,7 @@ impl ModuleResolveResult {
                 .copied()
                 .chain(sources)
                 .collect(),
+            export: self.export.clone(),
         }
         .cell())
     }
@@ -302,6 +340,7 @@ impl ModuleResolveResult {
                 return Ok(Self {
                     primary: result_ref.primary.clone(),
                     affecting_sources: affecting_sources.into_boxed_slice(),
+                    export: result_ref.export.clone(),
                 }
                 .cell());
             }
@@ -524,6 +563,7 @@ impl RequestKey {
 pub struct ResolveResult {
     pub primary: SliceMap<RequestKey, ResolveResultItem>,
     pub affecting_sources: Box<[ResolvedVc<Box<dyn Source>>]>,
+    pub export: ExportUsage,
 }
 
 #[turbo_tasks::value_impl]
@@ -586,6 +626,7 @@ impl ResolveResult {
         ResolveResult {
             primary: Default::default(),
             affecting_sources: Default::default(),
+            export: ExportUsage::All,
         }
         .resolved_cell()
     }
@@ -596,21 +637,24 @@ impl ResolveResult {
         ResolveResult {
             primary: Default::default(),
             affecting_sources: affecting_sources.into_boxed_slice(),
+            export: ExportUsage::All,
         }
         .resolved_cell()
     }
 
-    pub fn primary(result: ResolveResultItem) -> ResolvedVc<Self> {
-        Self::primary_with_key(RequestKey::default(), result)
+    pub fn primary(result: ResolveResultItem, export: ExportUsage) -> ResolvedVc<Self> {
+        Self::primary_with_key(RequestKey::default(), result, export)
     }
 
     pub fn primary_with_key(
         request_key: RequestKey,
         result: ResolveResultItem,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ResolveResult {
             primary: vec![(request_key, result)].into_boxed_slice(),
             affecting_sources: Default::default(),
+            export,
         }
         .resolved_cell()
     }
@@ -619,25 +663,29 @@ impl ResolveResult {
         request_key: RequestKey,
         result: ResolveResultItem,
         affecting_sources: Vec<ResolvedVc<Box<dyn Source>>>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ResolveResult {
             primary: vec![(request_key, result)].into_boxed_slice(),
             affecting_sources: affecting_sources.into_boxed_slice(),
+            export,
         }
         .resolved_cell()
     }
 
-    pub fn source(source: ResolvedVc<Box<dyn Source>>) -> ResolvedVc<Self> {
-        Self::source_with_key(RequestKey::default(), source)
+    pub fn source(source: ResolvedVc<Box<dyn Source>>, export: ExportUsage) -> ResolvedVc<Self> {
+        Self::source_with_key(RequestKey::default(), source, export)
     }
 
     pub fn source_with_key(
         request_key: RequestKey,
         source: ResolvedVc<Box<dyn Source>>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ResolveResult {
             primary: vec![(request_key, ResolveResultItem::Source(source))].into_boxed_slice(),
             affecting_sources: Default::default(),
+            export,
         }
         .resolved_cell()
     }
@@ -646,10 +694,12 @@ impl ResolveResult {
         request_key: RequestKey,
         source: ResolvedVc<Box<dyn Source>>,
         affecting_sources: Vec<ResolvedVc<Box<dyn Source>>>,
+        export: ExportUsage,
     ) -> ResolvedVc<Self> {
         ResolveResult {
             primary: vec![(request_key, ResolveResultItem::Source(source))].into_boxed_slice(),
             affecting_sources: affecting_sources.into_boxed_slice(),
+            export,
         }
         .resolved_cell()
     }
@@ -699,6 +749,7 @@ impl ResolveResult {
                 .try_join()
                 .await?
                 .into_boxed_slice(),
+            export: self.export.clone(),
         })
     }
 
@@ -746,6 +797,7 @@ impl ResolveResult {
                 .into_iter()
                 .collect(),
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         })
     }
 
@@ -769,6 +821,7 @@ impl ResolveResult {
                 .into_iter()
                 .collect(),
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         })
     }
 
@@ -791,6 +844,7 @@ impl ResolveResult {
         ResolveResult {
             primary: new_primary,
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         }
     }
 
@@ -813,6 +867,7 @@ impl ResolveResult {
 pub struct ResolveResultBuilder {
     pub primary: FxIndexMap<RequestKey, ResolveResultItem>,
     pub affecting_sources: Vec<ResolvedVc<Box<dyn Source>>>,
+    pub export: ExportUsage,
 }
 
 impl From<ResolveResultBuilder> for ResolveResult {
@@ -820,6 +875,7 @@ impl From<ResolveResultBuilder> for ResolveResult {
         ResolveResult {
             primary: v.primary.into_iter().collect(),
             affecting_sources: v.affecting_sources.into_boxed_slice(),
+            export: v.export,
         }
     }
 }
@@ -828,6 +884,7 @@ impl From<ResolveResult> for ResolveResultBuilder {
         ResolveResultBuilder {
             primary: IntoIterator::into_iter(v.primary).collect(),
             affecting_sources: v.affecting_sources.into_vec(),
+            export: v.export,
         }
     }
 }
@@ -880,6 +937,7 @@ impl ResolveResult {
                 .copied()
                 .chain(std::iter::once(source))
                 .collect(),
+            export: self.export.clone(),
         }
         .cell())
     }
@@ -897,6 +955,7 @@ impl ResolveResult {
                 .copied()
                 .chain(sources)
                 .collect(),
+            export: self.export.clone(),
         }
         .cell())
     }
@@ -916,6 +975,7 @@ impl ResolveResult {
                 return Ok(Self {
                     primary: result_ref.primary.clone(),
                     affecting_sources: affecting_sources.into_boxed_slice(),
+                    export: result_ref.export.clone(),
                 }
                 .cell());
             }
@@ -1039,6 +1099,7 @@ impl ResolveResult {
         Ok(ResolveResult {
             primary: new_primary,
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         }
         .into())
     }
@@ -1076,6 +1137,7 @@ impl ResolveResult {
         Ok(ResolveResult {
             primary: new_primary,
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         }
         .into())
     }
@@ -1100,6 +1162,7 @@ impl ResolveResult {
         ResolveResult {
             primary: new_primary,
             affecting_sources: self.affecting_sources.clone(),
+            export: self.export.clone(),
         }
         .into()
     }
@@ -1489,10 +1552,12 @@ pub async fn resolve_raw(
     lookup_dir: Vc<FileSystemPath>,
     path: Vc<Pattern>,
     force_in_lookup_dir: bool,
+    export: ExportUsage,
 ) -> Result<Vc<ResolveResult>> {
     async fn to_result(
         request: &str,
         path: ResolvedVc<FileSystemPath>,
+        export: ExportUsage,
     ) -> Result<Vc<ResolveResult>> {
         let RealPathResult { path, symlinks } = &*path.realpath_with_links().await?;
         Ok(*ResolveResult::source_with_affecting_sources(
@@ -1507,6 +1572,7 @@ pub async fn resolve_raw(
                 })
                 .try_join()
                 .await?,
+            export,
         ))
     }
 
@@ -1531,7 +1597,7 @@ pub async fn resolve_raw(
         } else {
             for m in matches.iter() {
                 if let PatternMatch::File(request, path) = m {
-                    results.push(to_result(request, *path).await?);
+                    results.push(to_result(request, *path, export.clone()).await?);
                 }
             }
         }
@@ -1549,7 +1615,7 @@ pub async fn resolve_raw(
         }
         for m in matches.iter() {
             if let PatternMatch::File(request, path) = m {
-                results.push(to_result(request, *path).await?);
+                results.push(to_result(request, *path, export.clone()).await?);
             }
         }
     }
@@ -1748,6 +1814,7 @@ async fn handle_after_resolve_plugins(
     Ok(ResolveResult {
         primary: new_primary.into_iter().collect(),
         affecting_sources: affecting_sources.into_boxed_slice(),
+        export: result_value.export.clone(),
     }
     .cell())
 }
@@ -1777,6 +1844,7 @@ async fn resolve_internal_inline(
     };
     async move {
         let options_value: &ResolveOptions = &*options.await?;
+
         let request_value = request.await?;
 
         // Apply import mappings if provided
@@ -2022,6 +2090,7 @@ async fn resolve_internal_inline(
                             .to_resolved()
                             .await?,
                         )),
+                        options_value.export.clone(),
                     )
                 } else {
                     *ResolveResult::primary_with_key(
@@ -2031,6 +2100,7 @@ async fn resolve_internal_inline(
                             ty: ExternalType::Url,
                             traced: ExternalTraced::Untraced,
                         },
+                        options_value.export.clone(),
                     )
                 }
             }
@@ -2048,6 +2118,7 @@ async fn resolve_internal_inline(
                         ty: ExternalType::Url,
                         traced: ExternalTraced::Untraced,
                     },
+                    options_value.export.clone(),
                 )
             }
             Request::Unknown { path } => {
@@ -2435,6 +2506,7 @@ async fn apply_in_package(
                 request_key,
                 ResolveResultItem::Ignore,
                 refs,
+                options_value.export.clone(),
             )));
         }
 
@@ -2724,6 +2796,8 @@ async fn resolve_import_map_result(
     options: Vc<ResolveOptions>,
     query: Vc<RcStr>,
 ) -> Result<Option<Vc<ResolveResult>>> {
+    let options_value = options.await?;
+
     Ok(match result {
         ImportMapResult::Result(result) => Some(**result),
         ImportMapResult::Alias(request, alias_lookup_path) => {
@@ -2743,13 +2817,14 @@ async fn resolve_import_map_result(
                 ))
             }
         }
-        ImportMapResult::External(name, ty, traced) => {
-            Some(*ResolveResult::primary(ResolveResultItem::External {
+        ImportMapResult::External(name, ty, traced) => Some(*ResolveResult::primary(
+            ResolveResultItem::External {
                 name: name.clone(),
                 ty: *ty,
                 traced: *traced,
-            }))
-        }
+            },
+            options_value.export.clone(),
+        )),
         ImportMapResult::AliasExternal {
             name,
             ty,
@@ -2781,11 +2856,14 @@ async fn resolve_import_map_result(
                 .await?
                 .is_unresolvable_ref();
                 if is_external_resolvable {
-                    Some(*ResolveResult::primary(ResolveResultItem::External {
-                        name: name.clone(),
-                        ty: *ty,
-                        traced: *traced,
-                    }))
+                    Some(*ResolveResult::primary(
+                        ResolveResultItem::External {
+                            name: name.clone(),
+                            ty: *ty,
+                            traced: *traced,
+                        },
+                        options_value.export.clone(),
+                    ))
                 } else {
                     None
                 }
@@ -2877,6 +2955,7 @@ async fn resolved(
             })
             .try_join()
             .await?,
+        options_value.export.clone(),
     ))
 }
 
