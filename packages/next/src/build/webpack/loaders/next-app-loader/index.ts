@@ -145,6 +145,7 @@ async function createTreeCodeFromPath(
   const splittedPath = pagePath.split(/[\\/]/, 1)
   const isNotFoundRoute = page === UNDERSCORE_NOT_FOUND_ROUTE_ENTRY
   const isDefaultNotFound = isAppBuiltinNotFoundPage(pagePath)
+  const isAppErrorRoute = page === '/_error/page'
   const appDirPrefix = isDefaultNotFound ? APP_DIR_ALIAS : splittedPath[0]
   const pages: string[] = []
 
@@ -209,12 +210,12 @@ async function createTreeCodeFromPath(
       null
     const routerDirPath = `${appDirPrefix}${segmentPath}`
     // For default not-found, don't traverse the directory to find metadata.
-    const resolvedRouteDir = isDefaultNotFound
-      ? ''
-      : await resolveDir(routerDirPath)
+    const resolvedRouteDir =
+      isDefaultNotFound || isAppErrorRoute
+        ? ''
+        : await resolveDir(routerDirPath)
 
-    const isAppErrorRoute = page === '/_error/page'
-    if (resolvedRouteDir && !isAppErrorRoute) {
+    if (resolvedRouteDir) {
       metadata = await createStaticMetadataFromRoute(resolvedRouteDir, {
         basePath,
         segment: segmentPath,

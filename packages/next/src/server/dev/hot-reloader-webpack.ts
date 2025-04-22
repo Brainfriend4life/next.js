@@ -943,13 +943,17 @@ export default class HotReloaderWebpack implements NextJsHotReloaderInterface {
                       name: bundlePath,
                       page,
                       appPaths: entryData.appPaths,
-                      pagePath: posix.join(
-                        APP_DIR_ALIAS,
-                        relative(
-                          this.appDir!,
-                          entryData.absolutePagePath
-                        ).replace(/\\/g, '/')
-                      ),
+                      pagePath: entryData.absolutePagePath.startsWith(
+                        this.appDir!
+                      )
+                        ? posix.join(
+                            APP_DIR_ALIAS,
+                            relative(
+                              this.appDir!,
+                              entryData.absolutePagePath
+                            ).replace(/\\/g, '/')
+                          )
+                        : entryData.absolutePagePath,
                       appDir: this.appDir!,
                       pageExtensions: this.config.pageExtensions,
                       rootDir: this.dir,
@@ -1056,13 +1060,29 @@ export default class HotReloaderWebpack implements NextJsHotReloaderInterface {
                     name: bundlePath,
                     page,
                     appPaths: entryData.appPaths,
-                    pagePath: posix.join(
-                      APP_DIR_ALIAS,
-                      relative(
-                        this.appDir!,
-                        entryData.absolutePagePath
-                      ).replace(/\\/g, '/')
-                    ),
+                    // Invalid dependencies have been reported by plugins or loaders for this module. All reported dependencies need to be absolute paths.
+                    // Invalid dependencies may lead to broken watching and caching.
+                    // As best effort we try to convert all invalid values to absolute paths and converting globs into context dependencies, but this is deprecated behavior.
+                    // Loaders: Pass absolute paths to this.addDependency (existing files), this.addMissingDependency (not existing files), and this.addContextDependency (directories).
+                    // Plugins: Pass absolute paths to fileDependencies (existing files), missingDependencies (not existing files), and contextDependencies (directories).
+                    // Globs: They are not supported. Pass absolute path to the directory as context dependencies.
+                    // The following invalid values have been reported:
+                    //  * "../default.js"
+                    //  * "../default.jsx"
+                    //  * "../default.ts"
+                    //  * and more ...
+                    // Trace: getAppEntry ../../../../packages/next/dist/client/components/empty-error.js
+                    pagePath: entryData.absolutePagePath.startsWith(
+                      this.appDir!
+                    )
+                      ? posix.join(
+                          APP_DIR_ALIAS,
+                          relative(
+                            this.appDir!,
+                            entryData.absolutePagePath
+                          ).replace(/\\/g, '/')
+                        )
+                      : entryData.absolutePagePath,
                     appDir: this.appDir!,
                     pageExtensions: this.config.pageExtensions,
                     rootDir: this.dir,
