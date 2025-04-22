@@ -192,6 +192,7 @@ import { isUseCacheTimeoutError } from '../use-cache/use-cache-errors'
 import { createServerInsertedMetadata } from './metadata-insertion/create-server-inserted-metadata'
 import { getPreviouslyRevalidatedTags } from '../server-utils'
 import { executeRevalidates } from '../revalidation-utils'
+import EmptyError from '../../client/components/empty-error'
 
 export type GetDynamicParamFromSegment = (
   // [slug] / [[slug]] / [...slug]
@@ -335,6 +336,22 @@ function createNotFoundLoaderTree(loaderTree: LoaderTree): LoaderTree {
       ],
     },
     components,
+  ]
+}
+
+function createErrorLoaderTree(err: any): LoaderTree {
+  return [
+    '',
+    {
+      children: [
+        PAGE_SEGMENT_KEY,
+        {},
+        {
+          page: [() => () => <EmptyError err={err} />, ''],
+        },
+      ],
+    },
+    {},
   ]
 }
 
@@ -1469,7 +1486,12 @@ async function renderToHTMLOrFlightImpl(
       renderOpts.devRenderResumeDataCache ??
       postponedState?.renderResumeDataCache
 
-    const rootParams = getRootParams(loaderTree, ctx.getDynamicParamFromSegment)
+    let tree = loaderTree
+    if (pagePath === '/_error') {
+      tree = createErrorLoaderTree(ctx.renderOpts.err)
+    }
+
+    const rootParams = getRootParams(tree, ctx.getDynamicParamFromSegment)
     const requestStore = createRequestStoreForRender(
       req,
       res,
@@ -1571,7 +1593,7 @@ async function renderToHTMLOrFlightImpl(
       res,
       ctx,
       workStore,
-      loaderTree,
+      tree,
       formState,
       postponedState
     )

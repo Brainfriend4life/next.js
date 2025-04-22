@@ -1,7 +1,7 @@
 import type { OverlayState } from '../shared'
 import type { GlobalErrorComponent } from '../../global-error'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppDevOverlayErrorBoundary } from './app-dev-overlay-error-boundary'
 import { FontStyles } from '../font/font-styles'
 import { DevOverlay } from '../ui/dev-overlay'
@@ -47,11 +47,17 @@ function ReplaySsrOnlyErrors({
   onBlockingError: () => void
 }) {
   if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const hasReadRef = useRef(false)
     // Need to read during render. The attributes will be gone after commit.
     const ssrError = readSsrError()
+
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      if (ssrError !== null) {
+      if (ssrError !== null && !hasReadRef.current) {
+        if (!hasReadRef.current) {
+          hasReadRef.current = true
+        }
         // TODO(veil): Include original Owner Stack (NDX-905)
         // TODO(veil): Mark as recoverable error
         // TODO(veil): console.error
