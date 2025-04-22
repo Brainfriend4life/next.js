@@ -339,7 +339,7 @@ function createNotFoundLoaderTree(loaderTree: LoaderTree): LoaderTree {
   ]
 }
 
-function createErrorLoaderTree(err: any): LoaderTree {
+function createErrorLoaderTree(): LoaderTree {
   return [
     '',
     {
@@ -347,7 +347,7 @@ function createErrorLoaderTree(err: any): LoaderTree {
         PAGE_SEGMENT_KEY,
         {},
         {
-          page: [() => () => <EmptyError err={err} />, ''],
+          page: [() => EmptyError, ''],
         },
       ],
     },
@@ -1488,7 +1488,7 @@ async function renderToHTMLOrFlightImpl(
 
     let tree = loaderTree
     if (pagePath === '/_error') {
-      tree = createErrorLoaderTree(ctx.renderOpts.err)
+      tree = createErrorLoaderTree()
     }
 
     const rootParams = getRootParams(tree, ctx.getDynamicParamFromSegment)
