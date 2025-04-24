@@ -22,26 +22,12 @@ pub async fn is_export_used(
 
     let export_usage_info = export_usage_info.await?;
     let Some(exports) = export_usage_info.used_exports.get(&module) else {
-        // If the `module` is not `EcmascriptModuleAsset`, it will not be in the map and treat it as
-        // used.
-        return Ok(true);
+        bail!(
+            "module not found in export usage info. Something is wrong with the export usage info."
+        );
     };
 
-    for export in exports {
-        match export {
-            ExportUsage::Named(rc_str) => {
-                if rc_str == &export_name {
-                    return Ok(true);
-                }
-            }
-            ExportUsage::Evaluation => {}
-            ExportUsage::All => {
-                return Ok(true);
-            }
-        }
-    }
-
-    Ok(false)
+    Ok(exports.contains(&ExportUsage::All) || exports.contains(&ExportUsage::Named(export_name)))
 }
 
 #[turbo_tasks::function(operation)]
@@ -59,7 +45,7 @@ pub async fn compute_export_usage_info(
     let mut result = ExportUsageInfo::default();
 
     for item in results {
-        for (k, v) in &item.used_exports {
+        for (k, v) in &item.await?.used_exports {
             result.used_exports.entry(*k).or_default().extend(v.clone());
         }
     }
@@ -67,9 +53,8 @@ pub async fn compute_export_usage_info(
     Ok(result.cell())
 }
 
-#[turbo_tasks::function]
 pub async fn compute_export_usage_info_single(
-    graph: ResolvedVc<SingleModuleGraph>,
+    graph: Vc<SingleModuleGraph>,
 ) -> Result<Vc<ExportUsageInfo>> {
     let graph = graph.await?;
     let mut usage = ExportUsageInfo::default();
@@ -79,7 +64,7 @@ pub async fn compute_export_usage_info_single(
     graph
         .traverse_edges(|(edge, target)| {
             if let Some(target_module) =
-                ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(target.module)
+                ResolvedVc::try_downcast::<Box<dyn EcmascriptChunkPlaceable>>(target.module)
             {
                 if let Some((_, ref_data)) = edge {
                     usage
