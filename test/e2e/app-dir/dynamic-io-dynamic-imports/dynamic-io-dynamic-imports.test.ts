@@ -53,6 +53,8 @@ describe('async imports in dynamicIO', () => {
          "/outside-of-render/client/sync-module",
          "/outside-of-render/server/async-module",
          "/outside-of-render/server/sync-module",
+         "/top-level-await-in-segment/client",
+         "/top-level-await-in-segment/server",
        ]
       `)
     })
@@ -154,8 +156,19 @@ describe('async imports in dynamicIO', () => {
     })
   })
 
+  describe('top-level await in segments', () => {
+    it('server', async () => {
+      await testPage('/top-level-await-in-segment/server')
+    })
+
+    it('client', async () => {
+      await testPage('/top-level-await-in-segment/client')
+    })
+  })
+
   // TODO:
   // - imports inside an external
   // likely to fail:
   // - unawaited import with a tasky delay (and nothing else to delay `cacheSignal`)
+  // - TLA in a client component that is not a segment and is only imported from server components (so it's missed by `warmAllModulesInTree`)
 })
