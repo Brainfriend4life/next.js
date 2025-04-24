@@ -11,7 +11,7 @@ use turbopack_core::{
         },
         origin::{ResolveOrigin, ResolveOriginExt},
         parse::Request,
-        resolve, ExportUsage, ModulePart, ModuleResolveResult, ResolveResult,
+        resolve, ModuleResolveResult, ResolveResult,
     },
 };
 /// Retrieves the [ResolutionConditions] of the "into" and "in" package resolution options, so that
@@ -51,25 +51,13 @@ pub fn apply_esm_specific_options(
         ReferenceType::EcmaScriptModules(EcmaScriptModulesReferenceSubType::ImportWithType(_))
     );
 
-    let export_usage = match reference_type {
-        ReferenceType::EcmaScriptModules(EcmaScriptModulesReferenceSubType::ImportPart(part)) => {
-            match part {
-                ModulePart::Export(name) => ExportUsage::Named(name.clone()),
-                ModulePart::Evaluation => ExportUsage::Evaluation,
-                _ => ExportUsage::All,
-            }
-        }
-        _ => ExportUsage::All,
-    };
-
-    apply_esm_specific_options_internal(options, clear_extensions, export_usage)
+    apply_esm_specific_options_internal(options, clear_extensions)
 }
 
 #[turbo_tasks::function]
 async fn apply_esm_specific_options_internal(
     options: Vc<ResolveOptions>,
     clear_extensions: bool,
-    export_usage: ExportUsage,
 ) -> Result<Vc<ResolveOptions>> {
     let mut options: ResolveOptions = options.owned().await?;
     // TODO set fully_specified when in strict ESM mode
@@ -84,7 +72,6 @@ async fn apply_esm_specific_options_internal(
     }
 
     options.parse_data_uris = true;
-    options.export = export_usage;
 
     Ok(options.cell())
 }

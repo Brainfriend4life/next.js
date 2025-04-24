@@ -266,7 +266,7 @@ impl RequireContextAssetReference {
 impl ModuleReference for RequireContextAssetReference {
     #[turbo_tasks::function]
     fn resolve_reference(&self) -> Vc<ModuleResolveResult> {
-        *ModuleResolveResult::module(ResolvedVc::upcast(self.inner), ExportUsage::All)
+        *ModuleResolveResult::module(ResolvedVc::upcast(self.inner))
     }
 }
 
@@ -286,7 +286,12 @@ impl ValueToString for RequireContextAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for RequireContextAssetReference {}
+impl ChunkableModuleReference for RequireContextAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 impl IntoCodeGenReference for RequireContextAssetReference {
     fn into_code_gen_reference(
@@ -360,7 +365,12 @@ impl ValueToString for ResolvedModuleReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for ResolvedModuleReference {}
+impl ChunkableModuleReference for ResolvedModuleReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 #[turbo_tasks::value]
 pub struct RequireContextAsset {

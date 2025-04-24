@@ -199,7 +199,6 @@ impl ModuleReference for EsmAssetReference {
                             ModuleResolveResultItem::Ignore,
                         )]),
                         affecting_sources: Default::default(),
-                        export: ExportUsage::Evaluation,
                     }
                     .cell());
                 }
@@ -213,20 +212,11 @@ impl ModuleReference for EsmAssetReference {
                         ResolvedVc::try_downcast_type(self.origin)
                             .expect("EsmAssetReference origin should be a EcmascriptModuleAsset");
 
-                    let export = match part {
-                        ModulePart::Export(rc_str) => ExportUsage::Named(rc_str.clone()),
-                        ModulePart::Evaluation => ExportUsage::Evaluation,
-                        _ => ExportUsage::All,
-                    };
-
-                    return Ok(*ModuleResolveResult::module(
-                        ResolvedVc::upcast(
-                            EcmascriptModulePartAsset::select_part(*module, part.clone())
-                                .to_resolved()
-                                .await?,
-                        ),
-                        export,
-                    ));
+                    return Ok(*ModuleResolveResult::module(ResolvedVc::upcast(
+                        EcmascriptModulePartAsset::select_part(*module, part.clone())
+                            .to_resolved()
+                            .await?,
+                    )));
                 }
 
                 bail!("export_name is required for part import")
@@ -292,6 +282,15 @@ impl ChunkableModuleReference for EsmAssetReference {
                 Some(ChunkingType::ParallelInheritAsync)
             },
         ))
+    }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        match &self.export_name {
+            Some(ModulePart::Export(export_name)) => ExportUsage::named(export_name.clone()),
+            Some(ModulePart::Evaluation) => ExportUsage::evaluation(),
+            _ => ExportUsage::all(),
+        }
     }
 }
 

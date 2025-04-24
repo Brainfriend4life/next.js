@@ -20,7 +20,8 @@ use turbopack_core::{
     reference::ModuleReference,
     reference_type::{ReferenceType, UrlReferenceSubType},
     resolve::{
-        origin::ResolveOrigin, parse::Request, url_resolve, ExternalType, ModuleResolveResult,
+        origin::ResolveOrigin, parse::Request, url_resolve, ExportUsage, ExternalType,
+        ModuleResolveResult,
     },
 };
 
@@ -128,6 +129,11 @@ impl ChunkableModuleReference for UrlAssetReference {
     #[turbo_tasks::function]
     fn chunking_type(&self) -> Vc<ChunkingTypeOption> {
         Vc::cell(Some(ChunkingType::Parallel))
+    }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
     }
 }
 

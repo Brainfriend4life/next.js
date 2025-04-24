@@ -6,10 +6,7 @@ use turbo_tasks::{ResolvedVc, Upcast, Value, Vc};
 use turbo_tasks_fs::FileSystemPath;
 
 use super::{options::ResolveOptions, parse::Request, ModuleResolveResult};
-use crate::{
-    context::AssetContext, module::OptionModule, reference_type::ReferenceType,
-    resolve::ExportUsage,
-};
+use crate::{context::AssetContext, module::OptionModule, reference_type::ReferenceType};
 
 /// A location where resolving can occur from. It carries some meta information
 /// that are needed for resolving from here.
@@ -89,7 +86,7 @@ async fn resolve_asset(
     reference_type: Value<ReferenceType>,
 ) -> Result<Vc<ModuleResolveResult>> {
     if let Some(asset) = *resolve_origin.get_inner_asset(request).await? {
-        return Ok(*ModuleResolveResult::module(asset, ExportUsage::All));
+        return Ok(*ModuleResolveResult::module(asset));
     }
     Ok(resolve_origin
         .asset_context()

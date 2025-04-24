@@ -20,7 +20,7 @@ use turbopack_core::{
     resolve::{
         origin::{ResolveOrigin, ResolveOriginExt},
         parse::Request,
-        ModuleResolveResult,
+        ExportUsage, ModuleResolveResult,
     },
 };
 use turbopack_resolve::ecmascript::esm_resolve;
@@ -104,6 +104,11 @@ impl ChunkableModuleReference for EsmAsyncAssetReference {
     #[turbo_tasks::function]
     fn chunking_type(&self) -> Vc<ChunkingTypeOption> {
         Vc::cell(Some(ChunkingType::Async))
+    }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
     }
 }
 

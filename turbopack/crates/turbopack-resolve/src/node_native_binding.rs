@@ -13,10 +13,7 @@ use turbopack_core::{
     file_source::FileSource,
     raw_module::RawModule,
     reference::ModuleReference,
-    resolve::{
-        pattern::Pattern, resolve_raw, ExportUsage, ModuleResolveResult, RequestKey,
-        ResolveResultItem,
-    },
+    resolve::{pattern::Pattern, resolve_raw, ModuleResolveResult, RequestKey, ResolveResultItem},
     source::Source,
     target::{CompileTarget, Platform},
 };
@@ -103,7 +100,7 @@ pub async fn resolve_node_pre_gyp_files(
         static ref LIBC_TEMPLATE: Regex =
             Regex::new(r"\{libc\}").expect("create node_libc regex failed");
     }
-    let config = resolve_raw(context_dir, config_file_pattern, true, ExportUsage::All)
+    let config = resolve_raw(context_dir, config_file_pattern, true)
         .first_source()
         .await?;
     let compile_target = compile_target.await?;
@@ -218,7 +215,6 @@ pub async fn resolve_node_pre_gyp_files(
                         })
                         .try_join()
                         .await?,
-                    ExportUsage::All,
                 ));
             }
         };
@@ -279,7 +275,7 @@ pub async fn resolve_node_gyp_build_files(
                 .expect("create napi_build_version regex failed");
     }
     let binding_gyp_pat = Pattern::new(Pattern::Constant("binding.gyp".into()));
-    let gyp_file = resolve_raw(context_dir, binding_gyp_pat, true, ExportUsage::All);
+    let gyp_file = resolve_raw(context_dir, binding_gyp_pat, true);
     if let [binding_gyp] = &gyp_file.primary_sources().await?[..] {
         let mut merged_affecting_sources =
             gyp_file.await?.get_affecting_sources().collect::<Vec<_>>();
@@ -297,7 +293,6 @@ pub async fn resolve_node_gyp_build_files(
                             target_path,
                             Pattern::new(Pattern::Constant(format!("{}.node", name).into())),
                             true,
-                            ExportUsage::All,
                         )
                         .await?;
                         if let Some((_, ResolveResultItem::Source(source))) =
@@ -324,7 +319,6 @@ pub async fn resolve_node_gyp_build_files(
                                 .await?
                                 .into_iter(),
                             merged_affecting_sources,
-                            ExportUsage::All,
                         ));
                     }
                 }
@@ -343,7 +337,6 @@ pub async fn resolve_node_gyp_build_files(
             Pattern::Constant(".node".into()),
         ])),
         true,
-        ExportUsage::All,
     )
     .as_raw_module_result())
 }
@@ -404,7 +397,6 @@ pub async fn resolve_node_bindings_files(
             root_context_dir,
             Pattern::new(Pattern::Constant("package.json".into())),
             true,
-            ExportUsage::All,
         )
         .first_source()
         .await?;
@@ -447,5 +439,5 @@ pub async fn resolve_node_bindings_files(
         .map(|try_dir| try_path(format!("{}/{}", try_dir, &file_name).into()))
         .try_flat_join()
         .await?;
-    Ok(*ModuleResolveResult::modules(modules, ExportUsage::All))
+    Ok(*ModuleResolveResult::modules(modules))
 }

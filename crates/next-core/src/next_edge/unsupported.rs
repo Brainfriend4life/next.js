@@ -10,7 +10,7 @@ use turbopack_core::{
         options::{ImportMapResult, ImportMappingReplacement, ReplacedImportMapping},
         parse::Request,
         pattern::Pattern,
-        ExportUsage, ResolveResult,
+        ResolveResult,
     },
     virtual_source::VirtualSource,
 };
@@ -52,11 +52,7 @@ impl ImportMappingReplacement for NextEdgeUnsupportedModuleReplacer {
             let source = unsupported_module_source(lookup_path.root(), module.clone())
                 .to_resolved()
                 .await?;
-            Ok(ImportMapResult::Result(ResolveResult::source(
-                ResolvedVc::upcast(source),
-                ExportUsage::All,
-            ))
-            .cell())
+            Ok(ImportMapResult::Result(ResolveResult::source(ResolvedVc::upcast(source))).cell())
         } else {
             Ok(ImportMapResult::NoEntry.cell())
         }

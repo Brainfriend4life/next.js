@@ -14,7 +14,7 @@ use turbopack_core::{
     issue::IssueSource,
     module_graph::ModuleGraph,
     reference::ModuleReference,
-    resolve::{origin::ResolveOrigin, parse::Request, ModuleResolveResult},
+    resolve::{origin::ResolveOrigin, parse::Request, ExportUsage, ModuleResolveResult},
 };
 use turbopack_resolve::ecmascript::cjs_resolve;
 
@@ -79,7 +79,12 @@ impl ValueToString for CjsAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for CjsAssetReference {}
+impl ChunkableModuleReference for CjsAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 #[turbo_tasks::value]
 #[derive(Hash, Debug)]
@@ -130,7 +135,12 @@ impl ValueToString for CjsRequireAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for CjsRequireAssetReference {}
+impl ChunkableModuleReference for CjsRequireAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 impl IntoCodeGenReference for CjsRequireAssetReference {
     fn into_code_gen_reference(
@@ -249,7 +259,12 @@ impl ValueToString for CjsRequireResolveAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for CjsRequireResolveAssetReference {}
+impl ChunkableModuleReference for CjsRequireResolveAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 impl IntoCodeGenReference for CjsRequireResolveAssetReference {
     fn into_code_gen_reference(

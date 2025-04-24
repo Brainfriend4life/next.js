@@ -116,7 +116,7 @@ impl WebAssemblyModuleAsset {
             SingleChunkableModuleReference::new(
                 Vc::upcast(self.loader()),
                 Vc::cell("wasm loader".into()),
-                ExportUsage::All,
+                ExportUsage::all(),
             )
             .to_resolved()
             .await?,

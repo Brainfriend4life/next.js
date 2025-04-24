@@ -61,7 +61,7 @@ impl Module for NextDynamicEntryModule {
             SingleChunkableModuleReference::new(
                 Vc::upcast(*self.module),
                 dynamic_ref_description(),
-                ExportUsage::All,
+                ExportUsage::all(),
             )
             .to_resolved()
             .await?,
@@ -104,7 +104,7 @@ impl EcmascriptChunkPlaceable for NextDynamicEntryModule {
             SingleChunkableModuleReference::new(
                 Vc::upcast(*self.module),
                 dynamic_ref_description(),
-                ExportUsage::All,
+                ExportUsage::all(),
             )
             .to_resolved()
             .await?,

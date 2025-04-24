@@ -15,8 +15,7 @@ use turbopack_core::{
             AfterResolvePlugin, AfterResolvePluginCondition, BeforeResolvePlugin,
             BeforeResolvePluginCondition,
         },
-        ExportUsage, ExternalTraced, ExternalType, ResolveResult, ResolveResultItem,
-        ResolveResultOption,
+        ExternalTraced, ExternalType, ResolveResult, ResolveResultItem, ResolveResultOption,
     },
 };
 
@@ -145,10 +144,9 @@ impl BeforeResolvePlugin for InvalidImportResolvePlugin {
         .resolved_cell()
         .emit();
 
-        ResolveResultOption::some(*ResolveResult::primary(
-            ResolveResultItem::Error(ResolvedVc::cell(self.message.join("\n").into())),
-            ExportUsage::All,
-        ))
+        ResolveResultOption::some(*ResolveResult::primary(ResolveResultItem::Error(
+            ResolvedVc::cell(self.message.join("\n").into()),
+        )))
     }
 }
 
@@ -250,7 +248,6 @@ impl AfterResolvePlugin for NextExternalResolvePlugin {
                 ty: ExternalType::CommonJs,
                 traced: ExternalTraced::Traced,
             },
-            ExportUsage::All,
         ))))
     }
 }
@@ -323,10 +320,9 @@ impl AfterResolvePlugin for NextNodeSharedRuntimeResolvePlugin {
             .root()
             .join(format!("{base}/{resource_request}").into());
 
-        Ok(Vc::cell(Some(ResolveResult::source(
-            ResolvedVc::upcast(FileSource::new(new_path).to_resolved().await?),
-            ExportUsage::All,
-        ))))
+        Ok(Vc::cell(Some(ResolveResult::source(ResolvedVc::upcast(
+            FileSource::new(new_path).to_resolved().await?,
+        )))))
     }
 }
 
@@ -423,9 +419,8 @@ impl AfterResolvePlugin for NextSharedRuntimeResolvePlugin {
         let raw_fs_path = &*fs_path.await?;
         let modified_path = raw_fs_path.path.replace("next/dist/esm/", "next/dist/");
         let new_path = fs_path.root().join(modified_path.into());
-        Ok(Vc::cell(Some(ResolveResult::source(
-            ResolvedVc::upcast(FileSource::new(new_path).to_resolved().await?),
-            ExportUsage::All,
-        ))))
+        Ok(Vc::cell(Some(ResolveResult::source(ResolvedVc::upcast(
+            FileSource::new(new_path).to_resolved().await?,
+        )))))
     }
 }

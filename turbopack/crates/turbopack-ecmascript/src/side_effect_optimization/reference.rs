@@ -106,13 +106,7 @@ impl ModuleReference for EcmascriptModulePartReference {
             ResolvedVc::upcast(self.module)
         };
 
-        let export = match &self.part {
-            Some(ModulePart::Export(export)) => ExportUsage::Named(export.clone()),
-            Some(ModulePart::Evaluation) => ExportUsage::Evaluation,
-            _ => ExportUsage::All,
-        };
-
-        Ok(*ModuleResolveResult::module(module, export))
+        Ok(*ModuleResolveResult::module(module))
     }
 }
 
@@ -121,6 +115,15 @@ impl ChunkableModuleReference for EcmascriptModulePartReference {
     #[turbo_tasks::function]
     fn chunking_type(self: Vc<Self>) -> Vc<ChunkingTypeOption> {
         Vc::cell(Some(ChunkingType::ParallelInheritAsync))
+    }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        match &self.part {
+            Some(ModulePart::Export(export)) => ExportUsage::named(export.clone()),
+            Some(ModulePart::Evaluation) => ExportUsage::evaluation(),
+            _ => ExportUsage::all(),
+        }
     }
 }
 

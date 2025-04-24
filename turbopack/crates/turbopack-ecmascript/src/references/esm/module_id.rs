@@ -9,7 +9,7 @@ use turbopack_core::{
     chunk::{ChunkableModuleReference, ChunkingContext, ChunkingTypeOption, ModuleChunkItemIdExt},
     module_graph::ModuleGraph,
     reference::ModuleReference,
-    resolve::ModuleResolveResult,
+    resolve::{ExportUsage, ModuleResolveResult},
 };
 
 use super::{base::ReferencedAsset, EsmAssetReference};
@@ -55,6 +55,11 @@ impl ChunkableModuleReference for EsmModuleIdAssetReference {
     #[turbo_tasks::function]
     fn chunking_type(&self) -> Vc<ChunkingTypeOption> {
         self.inner.chunking_type()
+    }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
     }
 }
 

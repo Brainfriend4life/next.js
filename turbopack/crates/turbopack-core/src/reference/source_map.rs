@@ -7,7 +7,7 @@ use super::ModuleReference;
 use crate::{
     file_source::FileSource,
     raw_module::RawModule,
-    resolve::{ExportUsage, ModuleResolveResult},
+    resolve::ModuleResolveResult,
     source_map::{
         utils::resolve_source_map_sources, GenerateSourceMap, OptionStringifiedSourceMap,
     },
@@ -44,14 +44,11 @@ impl ModuleReference for SourceMapReference {
     #[turbo_tasks::function]
     async fn resolve_reference(&self) -> Result<Vc<ModuleResolveResult>> {
         if let Some(file) = self.get_file().await {
-            return Ok(*ModuleResolveResult::module(
-                ResolvedVc::upcast(
-                    RawModule::new(Vc::upcast(FileSource::new(file)))
-                        .to_resolved()
-                        .await?,
-                ),
-                ExportUsage::All,
-            ));
+            return Ok(*ModuleResolveResult::module(ResolvedVc::upcast(
+                RawModule::new(Vc::upcast(FileSource::new(file)))
+                    .to_resolved()
+                    .await?,
+            )));
         }
         Ok(*ModuleResolveResult::unresolvable())
     }

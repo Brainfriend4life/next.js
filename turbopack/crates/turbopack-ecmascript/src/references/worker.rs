@@ -93,10 +93,9 @@ impl ModuleReference for WorkerAssetReference {
     #[turbo_tasks::function]
     async fn resolve_reference(&self) -> Result<Vc<ModuleResolveResult>> {
         if let Some(worker_loader_module) = self.worker_loader_module().await? {
-            Ok(*ModuleResolveResult::module(
-                ResolvedVc::upcast(worker_loader_module.to_resolved().await?),
-                ExportUsage::All,
-            ))
+            Ok(*ModuleResolveResult::module(ResolvedVc::upcast(
+                worker_loader_module.to_resolved().await?,
+            )))
         } else {
             Ok(*ModuleResolveResult::unresolvable())
         }
@@ -114,7 +113,12 @@ impl ValueToString for WorkerAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for WorkerAssetReference {}
+impl ChunkableModuleReference for WorkerAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 impl IntoCodeGenReference for WorkerAssetReference {
     fn into_code_gen_reference(

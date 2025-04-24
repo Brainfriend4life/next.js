@@ -107,13 +107,18 @@ impl ChunkableModuleReference for WorkerModuleReference {
             merge_tag: None,
         }))
     }
+
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
 }
 
 #[turbo_tasks::value_impl]
 impl ModuleReference for WorkerModuleReference {
     #[turbo_tasks::function]
     fn resolve_reference(&self) -> Vc<ModuleResolveResult> {
-        *ModuleResolveResult::module(self.module, ExportUsage::All)
+        *ModuleResolveResult::module(self.module)
     }
 }
 

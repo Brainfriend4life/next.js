@@ -20,7 +20,7 @@ use turbopack_core::{
     issue::IssueSource,
     module_graph::ModuleGraph,
     reference::ModuleReference,
-    resolve::{origin::ResolveOrigin, parse::Request, ModuleResolveResult},
+    resolve::{origin::ResolveOrigin, parse::Request, ExportUsage, ModuleResolveResult},
 };
 use turbopack_resolve::ecmascript::cjs_resolve;
 
@@ -85,7 +85,12 @@ impl ValueToString for AmdDefineAssetReference {
 }
 
 #[turbo_tasks::value_impl]
-impl ChunkableModuleReference for AmdDefineAssetReference {}
+impl ChunkableModuleReference for AmdDefineAssetReference {
+    #[turbo_tasks::function]
+    fn export_usage(&self) -> Vc<ExportUsage> {
+        ExportUsage::all()
+    }
+}
 
 #[derive(
     ValueDebugFormat,

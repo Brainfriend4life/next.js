@@ -85,7 +85,7 @@ impl Module for SideEffectsModule {
                         SingleChunkableModuleReference::new(
                             *ResolvedVc::upcast(*side_effect),
                             Vc::cell(RcStr::from("side effect")),
-                            ExportUsage::All,
+                            ExportUsage::evaluation(),
                         )
                         .to_resolved()
                         .await?,
@@ -99,7 +99,7 @@ impl Module for SideEffectsModule {
             SingleChunkableModuleReference::new(
                 *ResolvedVc::upcast(self.resolved_as),
                 Vc::cell(RcStr::from("resolved as")),
-                ExportUsage::All,
+                ExportUsage::all(),
             )
             .to_resolved()
             .await?,
