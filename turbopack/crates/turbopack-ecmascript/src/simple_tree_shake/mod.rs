@@ -1,6 +1,6 @@
 //! Intermediate tree shaking that uses global information but not good as the full tree shaking.
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use rustc_hash::{FxHashMap, FxHashSet};
 use turbo_rcstr::RcStr;
 use turbo_tasks::{ResolvedVc, TryJoinIterExt, Vc};
@@ -9,7 +9,7 @@ use turbopack_core::{
     resolve::ExportUsage,
 };
 
-use crate::{chunk::EcmascriptChunkPlaceable, EcmascriptModuleAsset};
+use crate::chunk::EcmascriptChunkPlaceable;
 
 pub async fn is_export_used(
     graph: ResolvedVc<ModuleGraph>,
