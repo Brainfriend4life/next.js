@@ -1,6 +1,6 @@
 //! Intermediate tree shaking that uses global information but not good as the full tree shaking.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use rustc_hash::{FxHashMap, FxHashSet};
 use turbo_rcstr::RcStr;
 use turbo_tasks::{ResolvedVc, TryJoinIterExt, Vc};
@@ -9,28 +9,25 @@ use turbopack_core::{
     resolve::ExportUsage,
 };
 
-use crate::chunk::EcmascriptChunkPlaceable;
+use crate::{chunk::EcmascriptChunkPlaceable, EcmascriptModuleAsset};
 
-#[turbo_tasks::function]
 pub async fn is_export_used(
     graph: ResolvedVc<ModuleGraph>,
     module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
     export_name: RcStr,
-) -> Result<Vc<bool>> {
+) -> Result<bool> {
     let export_usage_info = compute_export_usage_info(graph)
         .resolve_strongly_consistent()
         .await?;
 
     let export_usage_info = export_usage_info.await?;
     let Some(exports) = export_usage_info.used_exports.get(&module) else {
-        bail!(
-            "module not found in export usage info. Something is wrong with the export usage info."
-        );
+        // If the `module` is not `EcmascriptModuleAsset`, it will not be in the map and treat it as
+        // used.
+        return Ok(true);
     };
 
-    Ok(Vc::cell(
-        exports.contains(&ExportUsage::All) || exports.contains(&ExportUsage::Named(export_name)),
-    ))
+    Ok(exports.contains(&ExportUsage::All) || exports.contains(&ExportUsage::Named(export_name)))
 }
 
 #[turbo_tasks::function(operation)]
@@ -67,12 +64,12 @@ pub async fn compute_export_usage_info_single(
     graph
         .traverse_edges(|(edge, target)| {
             if let Some(target_module) =
-                ResolvedVc::try_downcast::<Box<dyn EcmascriptChunkPlaceable>>(target.module)
+                ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(target.module)
             {
                 if let Some((_, ref_data)) = edge {
                     usage
                         .used_exports
-                        .entry(target_module)
+                        .entry(ResolvedVc::upcast(target_module))
                         .or_default()
                         .insert(ref_data.export.clone());
                 }

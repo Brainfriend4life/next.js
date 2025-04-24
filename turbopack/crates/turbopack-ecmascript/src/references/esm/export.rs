@@ -539,7 +539,7 @@ impl EsmExports {
 impl EsmExports {
     pub async fn code_generation(
         self: Vc<Self>,
-        module_graph: Vc<ModuleGraph>,
+        module_graph: ResolvedVc<ModuleGraph>,
         chunking_context: Vc<Box<dyn ChunkingContext>>,
         module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
         parsed: Option<Vc<ParseResult>>,
@@ -568,7 +568,7 @@ impl EsmExports {
         let mut props = Vec::new();
         for (exported, local) in &expanded.exports {
             if unused_export_removal
-                && !*is_export_used(module_graph, *module, exported.clone()).await?
+                && !is_export_used(module_graph, module, exported.clone()).await?
             {
                 continue;
             }
