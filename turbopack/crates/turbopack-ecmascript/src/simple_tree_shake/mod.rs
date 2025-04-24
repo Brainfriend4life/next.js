@@ -28,21 +28,9 @@ pub async fn is_export_used(
         );
     };
 
-    for export in exports {
-        match export {
-            ExportUsage::Named(rc_str) => {
-                if rc_str == &export_name {
-                    return Ok(Vc::cell(true));
-                }
-            }
-            ExportUsage::Evaluation => {}
-            ExportUsage::All => {
-                return Ok(Vc::cell(true));
-            }
-        }
-    }
-
-    Ok(Vc::cell(false))
+    Ok(Vc::cell(
+        exports.contains(&ExportUsage::All) || exports.contains(&ExportUsage::Named(export_name)),
+    ))
 }
 
 #[turbo_tasks::function(operation)]
@@ -60,7 +48,7 @@ pub async fn compute_export_usage_info(
     let mut result = ExportUsageInfo::default();
 
     for item in results {
-        for (k, v) in &item.used_exports {
+        for (k, v) in &item.await?.used_exports {
             result.used_exports.entry(*k).or_default().extend(v.clone());
         }
     }
@@ -68,9 +56,8 @@ pub async fn compute_export_usage_info(
     Ok(result.cell())
 }
 
-#[turbo_tasks::function]
 pub async fn compute_export_usage_info_single(
-    graph: ResolvedVc<SingleModuleGraph>,
+    graph: Vc<SingleModuleGraph>,
 ) -> Result<Vc<ExportUsageInfo>> {
     let graph = graph.await?;
     let mut usage = ExportUsageInfo::default();
