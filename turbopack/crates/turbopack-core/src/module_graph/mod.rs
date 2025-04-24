@@ -294,7 +294,11 @@ impl SingleModuleGraph {
                             graph.add_edge(parent_idx, current_idx, RefData { export, ..ref_data });
                         }
                     }
-                    SingleModuleGraphBuilderNode::VisitedModule { module, idx } => {
+                    SingleModuleGraphBuilderNode::VisitedModule {
+                        module,
+                        idx,
+                        export,
+                    } => {
                         // Find the current node, if it was already added
                         let current_idx = if let Some(current_idx) = modules.get(&module) {
                             *current_idx
@@ -305,8 +309,16 @@ impl SingleModuleGraph {
                             idx
                         };
                         // Add the edge
-                        if let Some((parent_idx, chunking_type)) = parent_edge {
-                            graph.add_edge(parent_idx, current_idx, chunking_type);
+                        if let Some((parent_idx, data)) = parent_edge {
+                            graph.add_edge(
+                                parent_idx,
+                                current_idx,
+                                RefData {
+                                    export,
+                                    ..data.clone()
+                                },
+                            );
+                            graph.add_edge(parent_idx, current_idx, data);
                         }
                     }
                     SingleModuleGraphBuilderNode::ChunkableReference {
@@ -1298,6 +1310,7 @@ enum SingleModuleGraphBuilderNode {
     VisitedModule {
         module: ResolvedVc<Box<dyn Module>>,
         idx: GraphNodeIndex,
+        export: ExportUsage,
     },
     /// Issues to be added to the parent Module node
     #[allow(dead_code)]
@@ -1334,8 +1347,16 @@ impl SingleModuleGraphBuilderNode {
             },
         })
     }
-    fn new_visited_module(module: ResolvedVc<Box<dyn Module>>, idx: GraphNodeIndex) -> Self {
-        Self::VisitedModule { module, idx }
+    fn new_visited_module(
+        module: ResolvedVc<Box<dyn Module>>,
+        idx: GraphNodeIndex,
+        export: ExportUsage,
+    ) -> Self {
+        Self::VisitedModule {
+            module,
+            idx,
+            export,
+        }
     }
 }
 struct SingleModuleGraphBuilderEdge {
@@ -1412,7 +1433,9 @@ impl Visit<SingleModuleGraphBuilderNode> for SingleModuleGraphBuilder<'_> {
                         .map(async |(ty, export, target)| {
                             let to = if ty == COMMON_CHUNKING_TYPE {
                                 if let Some(idx) = visited_modules.get(&target) {
-                                    SingleModuleGraphBuilderNode::new_visited_module(target, *idx)
+                                    SingleModuleGraphBuilderNode::new_visited_module(
+                                        target, *idx, export,
+                                    )
                                 } else {
                                     SingleModuleGraphBuilderNode::new_module(target, export).await?
                                 }
@@ -1438,6 +1461,7 @@ impl Visit<SingleModuleGraphBuilderNode> for SingleModuleGraphBuilder<'_> {
                             SingleModuleGraphBuilderNode::new_visited_module(
                                 chunkable_ref_target,
                                 *idx,
+                                export,
                             )
                         } else {
                             SingleModuleGraphBuilderNode::new_module(chunkable_ref_target, export)
