@@ -165,7 +165,7 @@ pub struct EcmascriptOptions {
     /// are temporarily introduced.
     pub keep_last_successful_parse: bool,
 
-    pub unused_export_removal: bool,
+    pub remove_unused_exports: bool,
 }
 
 #[turbo_tasks::value(serialization = "auto_for_input")]
@@ -433,7 +433,7 @@ impl EcmascriptAnalyzable for EcmascriptModuleAsset {
             .reference_module_source_maps(Vc::upcast(self))
             .await?;
 
-        let unused_export_removal = self_resolved.options().await?.unused_export_removal;
+        let remove_unused_exports = self_resolved.options().await?.remove_unused_exports;
 
         Ok(EcmascriptModuleContent::new(
             EcmascriptModuleContentOptions {
@@ -452,7 +452,7 @@ impl EcmascriptAnalyzable for EcmascriptModuleAsset {
                 original_source_map: analyze_ref.source_map,
                 exports: analyze_ref.exports,
                 async_module_info,
-                unused_export_removal,
+                remove_unused_exports,
             },
         ))
     }
@@ -816,7 +816,7 @@ pub struct EcmascriptModuleContentOptions {
     original_source_map: ResolvedVc<OptionStringifiedSourceMap>,
     exports: ResolvedVc<EcmascriptExports>,
     async_module_info: Option<ResolvedVc<AsyncModuleInfo>>,
-    unused_export_removal: bool,
+    remove_unused_exports: bool,
 }
 
 #[turbo_tasks::value_impl]
@@ -840,7 +840,7 @@ impl EcmascriptModuleContent {
             original_source_map,
             exports,
             async_module_info,
-            unused_export_removal,
+            remove_unused_exports,
         } = input;
 
         let (esm_code_gens, part_code_gens, additional_code_gens, code_gens) = async {
@@ -866,7 +866,7 @@ impl EcmascriptModuleContent {
                                 *chunking_context,
                                 module,
                                 Some(*parsed),
-                                unused_export_removal,
+                                remove_unused_exports,
                             )
                             .await?,
                     )

@@ -543,7 +543,7 @@ impl EsmExports {
         chunking_context: Vc<Box<dyn ChunkingContext>>,
         module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
         parsed: Option<Vc<ParseResult>>,
-        unused_export_removal: bool,
+        remove_unused_exports: bool,
     ) -> Result<CodeGeneration> {
         let expanded = self.expand_exports().await?;
         let parsed = if let Some(parsed) = parsed {
@@ -567,7 +567,7 @@ impl EsmExports {
 
         let mut props = Vec::new();
         for (exported, local) in &expanded.exports {
-            if unused_export_removal
+            if remove_unused_exports
                 && !is_export_used(module_graph, module, exported.clone()).await?
             {
                 continue;

@@ -309,7 +309,7 @@ async fn run_test_operation(resource: RcStr) -> Result<Vc<FileSystemPath>> {
             rules: vec![(
                 ContextCondition::InDirectory("node_modules".into()),
                 ModuleOptionsContext {
-                    unused_export_removal: options.remove_unused_exports,
+                    remove_unused_exports: options.remove_unused_exports,
                     css: CssOptionsContext {
                         ..Default::default()
                     },
@@ -319,7 +319,7 @@ async fn run_test_operation(resource: RcStr) -> Result<Vc<FileSystemPath>> {
             )],
             module_rules: vec![module_rules],
             tree_shaking_mode: options.tree_shaking_mode,
-            unused_export_removal: options.remove_unused_exports,
+            remove_unused_exports: options.remove_unused_exports,
             ..Default::default()
         }
         .into(),
