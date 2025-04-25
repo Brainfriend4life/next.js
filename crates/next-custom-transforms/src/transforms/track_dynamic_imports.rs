@@ -1,4 +1,4 @@
-use indexmap::{indexset, IndexSet};
+use indexmap::{indexset, IndexMap, IndexSet};
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use swc_core::{
@@ -29,7 +29,7 @@ struct ImportReplacer<C> {
     track_dynamic_import_local_ident: Ident,
     track_async_function_local_ident: Ident,
     has_dynamic_import: bool,
-    identifiers_to_instrument: IndexSet<Atom>,
+    identifiers_to_instrument: IndexMap<Atom, Ident>,
 }
 
 impl<C> ImportReplacer<C>
@@ -43,7 +43,7 @@ where
             track_dynamic_import_local_ident: private_ident!("$$trackDynamicImport__"),
             track_async_function_local_ident: private_ident!("$$trackAsyncFunction__"),
             has_dynamic_import: false,
-            identifiers_to_instrument: IndexSet::new(),
+            identifiers_to_instrument: IndexMap::new(),
         }
     }
 }
@@ -94,7 +94,7 @@ where
         // `Script` needs `Vec<Stmt>`, but we need a shared type that works for both
         let mut new_module_items: Vec<ModuleItem> = vec![];
 
-        if &self.identifiers_to_instrument.len() > 0 {
+        if self.identifiers_to_instrument.len() > 0 {
             let import_args = MakeNamedImportArgs {
                 original_ident: quote_ident!("trackAsyncFunction").into(),
                 local_ident: self.track_async_function_local_ident.clone(),
@@ -106,17 +106,17 @@ where
                 Program::Script(..) => make_named_import_cjs(import_args).into(),
             });
         }
-        for name in &self.identifiers_to_instrument {
+        for (name, replacement_ident) in &self.identifiers_to_instrument {
             let name = name.as_str();
             let name_ident: Ident = quote_ident!(self.unresolved_ctxt, name).into();
 
             let replacement_expr = {
                 let expr_span = Span::dummy_with_cmt();
                 let mut expr: Expr = quote!(
-                    "$wrapper_fn($name_string, $name)" as Expr,
+                    "$wrapper_fn($name_string, $original_ident)" as Expr,
                     wrapper_fn = self.track_async_function_local_ident.clone(),
                     name_string: Expr = quote_str!(name).into(),
-                    name = name_ident.clone(),
+                    original_ident = name_ident.clone(),
                 );
 
                 // this call doesn't have any side effects, so add `/*#__PURE__*/`
@@ -125,11 +125,14 @@ where
                 expr
             };
 
+            // only define the replacement if the original is defined
+            // to avoid breaking `if (typeof __turbopack_require__ !== undefined) { ... }` checks
             new_module_items.push(quote!(
-                "if (typeof $name === 'function') {\
-                    $name = $replacement_expr;\
+                "if (typeof $original_ident === 'function') {\
+                    var $replacement_ident = $replacement_expr;\
                 }" as ModuleItem,
-                name = name_ident.clone(),
+                original_ident = name_ident.clone(),
+                replacement_ident = replacement_ident.clone(),
                 replacement_expr: Expr = replacement_expr,
             ));
         }
@@ -177,14 +180,25 @@ where
     }
 
     fn visit_mut_ident(&mut self, ident: &mut Ident) {
-        // find references to bundler globals like `__turbopack_load__`
+        // find references to bundler globals like `__turbopack_load__`,
+        // and replace them with an instrumented version
+        // (we'll define the values for the new identifiers later, back up in `visit_mut_program`)
         //
         // "globals" like this use the unresolved syntax context
         // https://rustdoc.swc.rs/swc_core/ecma/transforms/base/fn.resolver.html#unresolved_mark
         // if it's not unresolved, then there's a local redefinition which we don't want to touch
-        // TODO: we should replace this reference with a reference to our wrapper instead
         if ident.ctxt == self.unresolved_ctxt && GLOBALS_TO_INSTRUMENT.contains(&ident.sym) {
-            self.identifiers_to_instrument.insert(ident.sym.clone());
+            let replacement_ident = self
+                .identifiers_to_instrument
+                .entry(ident.sym.clone())
+                .or_insert_with(|| private_ident!(ident.sym.clone()));
+            // source-map the replacement ident back to the original
+            let replacement_ident = {
+                let mut mapped = replacement_ident.clone();
+                mapped.span = ident.span;
+                mapped
+            };
+            *ident = replacement_ident;
         }
     }
 }
@@ -205,7 +219,7 @@ fn make_named_import_esm(args: MakeNamedImportArgs) -> ModuleItem {
     } = args;
     let mut item = quote!(
         "import { $original_ident as $local_ident } from 'dummy'" as ModuleItem,
-        original_ident = original_ident,
+        original_ident = original_ident.clone(),
         local_ident = local_ident,
     );
     // the import source cannot be parametrized in `quote!()`, so patch it manually
