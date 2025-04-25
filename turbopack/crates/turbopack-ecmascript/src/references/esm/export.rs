@@ -539,9 +539,9 @@ impl EsmExports {
 impl EsmExports {
     pub async fn code_generation(
         self: Vc<Self>,
-        module_graph: ResolvedVc<ModuleGraph>,
+        module_graph: Vc<ModuleGraph>,
         chunking_context: Vc<Box<dyn ChunkingContext>>,
-        module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
+        module: Vc<Box<dyn EcmascriptChunkPlaceable>>,
         parsed: Option<Vc<ParseResult>>,
         remove_unused_exports: bool,
     ) -> Result<CodeGeneration> {

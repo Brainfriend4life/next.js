@@ -12,22 +12,44 @@ use turbopack_core::{
 use crate::chunk::EcmascriptChunkPlaceable;
 
 pub async fn is_export_used(
-    graph: ResolvedVc<ModuleGraph>,
-    module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
+    graph: Vc<ModuleGraph>,
+    module: Vc<Box<dyn EcmascriptChunkPlaceable>>,
     export_name: RcStr,
 ) -> Result<bool> {
+    let module_info = get_module_exports(graph, module).await?;
+
+    Ok(module_info.exports.contains(&ExportUsage::All)
+        || module_info
+            .exports
+            .contains(&ExportUsage::Named(export_name)))
+}
+
+#[turbo_tasks::function]
+pub async fn get_module_exports(
+    graph: ResolvedVc<ModuleGraph>,
+    module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
+) -> Result<Vc<ModuleExportUsageInfo>> {
     let export_usage_info = compute_export_usage_info(graph)
         .resolve_strongly_consistent()
         .await?;
 
     let export_usage_info = export_usage_info.await?;
+
     let Some(exports) = export_usage_info.used_exports.get(&module) else {
         bail!(
             "module not found in export usage info. Something is wrong with the export usage info."
         );
     };
 
-    Ok(exports.contains(&ExportUsage::All) || exports.contains(&ExportUsage::Named(export_name)))
+    Ok(ModuleExportUsageInfo {
+        exports: exports.clone(),
+    }
+    .cell())
+}
+
+#[turbo_tasks::value]
+struct ModuleExportUsageInfo {
+    exports: FxHashSet<ExportUsage>,
 }
 
 #[turbo_tasks::function(operation)]
