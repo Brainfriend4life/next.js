@@ -11,21 +11,8 @@ use turbopack_core::{
 
 use crate::chunk::EcmascriptChunkPlaceable;
 
-pub async fn is_export_used(
-    graph: Vc<ModuleGraph>,
-    module: Vc<Box<dyn EcmascriptChunkPlaceable>>,
-    export_name: RcStr,
-) -> Result<bool> {
-    let module_info = get_module_exports(graph, module).await?;
-
-    Ok(module_info.exports.contains(&ExportUsage::All)
-        || module_info
-            .exports
-            .contains(&ExportUsage::Named(export_name)))
-}
-
 #[turbo_tasks::function]
-pub async fn get_module_exports(
+pub async fn get_module_export_usages(
     graph: ResolvedVc<ModuleGraph>,
     module: ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>,
 ) -> Result<Vc<ModuleExportUsageInfo>> {
@@ -47,15 +34,8 @@ pub async fn get_module_exports(
     .cell())
 }
 
-#[turbo_tasks::value]
-struct ModuleExportUsageInfo {
-    exports: FxHashSet<ExportUsage>,
-}
-
 #[turbo_tasks::function(operation)]
-pub async fn compute_export_usage_info(
-    graph: ResolvedVc<ModuleGraph>,
-) -> Result<Vc<ExportUsageInfo>> {
+async fn compute_export_usage_info(graph: ResolvedVc<ModuleGraph>) -> Result<Vc<ExportUsageInfo>> {
     let results = graph
         .await?
         .graphs
@@ -108,4 +88,16 @@ pub async fn compute_export_usage_info_single(
 #[derive(Default)]
 pub struct ExportUsageInfo {
     used_exports: FxHashMap<ResolvedVc<Box<dyn EcmascriptChunkPlaceable>>, FxHashSet<ExportUsage>>,
+}
+
+#[turbo_tasks::value]
+pub struct ModuleExportUsageInfo {
+    exports: FxHashSet<ExportUsage>,
+}
+
+impl ModuleExportUsageInfo {
+    pub async fn is_export_used(&self, export_name: RcStr) -> Result<bool> {
+        Ok(self.exports.contains(&ExportUsage::All)
+            || self.exports.contains(&ExportUsage::Named(export_name)))
+    }
 }

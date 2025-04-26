@@ -34,7 +34,7 @@ use crate::{
     magic_identifier,
     parse::ParseResult,
     runtime_functions::{TURBOPACK_DYNAMIC, TURBOPACK_ESM},
-    simple_tree_shake::is_export_used,
+    simple_tree_shake::get_module_export_usages,
     tree_shake::asset::EcmascriptModulePartAsset,
     EcmascriptModuleAsset,
 };
@@ -567,10 +567,11 @@ impl EsmExports {
 
         let mut props = Vec::new();
         for (exported, local) in &expanded.exports {
-            if remove_unused_exports
-                && !is_export_used(module_graph, module, exported.clone()).await?
-            {
-                continue;
+            if remove_unused_exports {
+                let info = get_module_export_usages(module_graph, module).await?;
+                if !info.is_export_used(exported.clone()).await? {
+                    continue;
+                }
             }
 
             let expr = match local {
