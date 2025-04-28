@@ -9,9 +9,12 @@ use anyhow::{Context, Result};
 use byteorder::{ByteOrder, WriteBytesExt, BE};
 use lzzzz::lz4::{max_compressed_size, ACC_LEVEL_DEFAULT};
 
-use crate::static_sorted_file::{
-    BLOCK_TYPE_INDEX, BLOCK_TYPE_KEY, KEY_BLOCK_ENTRY_TYPE_BLOB, KEY_BLOCK_ENTRY_TYPE_DELETED,
-    KEY_BLOCK_ENTRY_TYPE_MEDIUM, KEY_BLOCK_ENTRY_TYPE_SMALL,
+use crate::{
+    interning_serde,
+    static_sorted_file::{
+        BLOCK_TYPE_INDEX, BLOCK_TYPE_KEY, KEY_BLOCK_ENTRY_TYPE_BLOB, KEY_BLOCK_ENTRY_TYPE_DELETED,
+        KEY_BLOCK_ENTRY_TYPE_MEDIUM, KEY_BLOCK_ENTRY_TYPE_SMALL,
+    },
 };
 
 /// The maximum number of entries that should go into a single key block
@@ -113,7 +116,8 @@ impl StaticSortedFileBuilder {
                 // This can't fail as we allocated enough capacity
                 .expect("AQMF insert failed");
         }
-        self.aqmf = pot::to_vec(&filter).expect("AQMF serialization failed");
+        self.aqmf = interning_serde::to_vec(&Default::default(), &filter)
+            .expect("AQMF serialization failed");
     }
 
     /// Computes compression dictionaries from keys and values of all entries

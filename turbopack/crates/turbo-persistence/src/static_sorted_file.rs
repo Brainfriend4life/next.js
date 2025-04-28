@@ -16,6 +16,7 @@ use rustc_hash::FxHasher;
 
 use crate::{
     arc_slice::ArcSlice,
+    interning_serde,
     lookup_entry::{LookupEntry, LookupValue},
     QueryKey,
 };
@@ -255,7 +256,8 @@ impl StaticSortedFile {
                 GuardResult::Value(aqmf) => aqmf,
                 GuardResult::Guard(guard) => {
                     let aqmf = &self.mmap[header.aqmf.start..header.aqmf.end];
-                    let aqmf: Arc<qfilter::Filter> = Arc::new(pot::from_slice(aqmf)?);
+                    let aqmf: Arc<qfilter::Filter> =
+                        Arc::new(interning_serde::from_slice(&Default::default(), aqmf)?);
                     let _ = guard.insert(aqmf.clone());
                     aqmf
                 }
@@ -267,7 +269,7 @@ impl StaticSortedFile {
         } else {
             let aqmf = self.aqmf.get_or_try_init(|| {
                 let aqmf = &self.mmap[header.aqmf.start..header.aqmf.end];
-                anyhow::Ok(pot::from_slice(aqmf)?)
+                anyhow::Ok(interning_serde::from_slice(&Default::default(), aqmf)?)
             })?;
             if !aqmf.contains_fingerprint(key_hash) {
                 return Ok(LookupResult::QuickFilterMiss);

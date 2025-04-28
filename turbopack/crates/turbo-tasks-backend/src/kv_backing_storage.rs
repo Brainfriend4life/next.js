@@ -5,6 +5,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 use serde::Serialize;
 use smallvec::SmallVec;
 use tracing::Span;
+use turbo_persistence::interning_serde;
 use turbo_tasks::{backend::CachedTaskType, turbo_tasks_scope, SessionId, TaskId};
 
 use crate::{
@@ -45,7 +46,7 @@ fn pot_serialize_small_vec<T: Serialize>(value: &T) -> pot::Result<SmallVec<[u8;
     }
 
     let mut output = SmallVec::new();
-    POT_CONFIG.serialize_into(value, SmallVecWrite(&mut output))?;
+    interning_serde::to_writer(&POT_CONFIG, value, SmallVecWrite(&mut output))?;
     Ok(output)
 }
 
@@ -364,7 +365,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             tx: &D::ReadTransaction<'_>,
             task_type: &CachedTaskType,
         ) -> Result<Option<TaskId>> {
-            let task_type = POT_CONFIG.serialize(task_type)?;
+            let task_type = interning_serde::to_vec(&POT_CONFIG, task_type)?;
             let Some(bytes) = database.get(tx, KeySpace::ForwardTaskCache, &task_type)? else {
                 return Ok(None);
             };
