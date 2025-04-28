@@ -1012,7 +1012,7 @@ pub fn get_relative_path_to(path: &str, other_path: &str) -> String {
     result.join("/")
 }
 
-#[derive(Debug, Clone, TaskInput)]
+#[derive(Debug, Clone, TaskInput, TraceRawVcs, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct FileSystemPath {
     pub fs: ResolvedVc<Box<dyn FileSystem>>,
     pub path: RcStr,
