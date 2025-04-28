@@ -1557,7 +1557,7 @@ impl JsConfig {
 
 #[turbo_tasks::value]
 struct OutdatedConfigIssue {
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
     old_name: RcStr,
     new_name: RcStr,
     description: RcStr,
@@ -1576,7 +1576,7 @@ impl Issue for OutdatedConfigIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

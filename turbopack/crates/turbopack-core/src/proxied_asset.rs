@@ -15,17 +15,14 @@ use crate::{
 #[turbo_tasks::value]
 pub struct ProxiedAsset {
     asset: ResolvedVc<Box<dyn OutputAsset>>,
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl ProxiedAsset {
     /// Creates a new [`ProxiedAsset`] from an [`Asset`] and a path.
     #[turbo_tasks::function]
-    pub fn new(
-        asset: ResolvedVc<Box<dyn OutputAsset>>,
-        path: ResolvedVc<FileSystemPath>,
-    ) -> Vc<Self> {
+    pub fn new(asset: ResolvedVc<Box<dyn OutputAsset>>, path: ResolvedFileSystemPath) -> Vc<Self> {
         ProxiedAsset { asset, path }.cell()
     }
 }
@@ -33,7 +30,7 @@ impl ProxiedAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for ProxiedAsset {
     #[turbo_tasks::function]
-    fn path(&self) -> Vc<FileSystemPath> {
+    fn path(&self) -> FileSystemPath {
         *self.path
     }
 

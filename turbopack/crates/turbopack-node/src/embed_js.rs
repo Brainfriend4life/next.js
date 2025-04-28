@@ -13,6 +13,6 @@ pub(crate) fn embed_file(path: RcStr) -> Vc<FileContent> {
 }
 
 #[turbo_tasks::function]
-pub(crate) fn embed_file_path(path: RcStr) -> Vc<FileSystemPath> {
+pub(crate) fn embed_file_path(path: RcStr) -> FileSystemPath {
     embed_fs().root().join(path)
 }

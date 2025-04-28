@@ -125,7 +125,7 @@ impl ValueToString for EcmascriptBuildNodeRuntimeChunk {
 #[turbo_tasks::value_impl]
 impl OutputAsset for EcmascriptBuildNodeRuntimeChunk {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let ident = self.ident_for_path();
 

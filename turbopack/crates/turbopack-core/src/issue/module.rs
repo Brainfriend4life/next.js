@@ -20,7 +20,7 @@ impl Issue for ModuleIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         self.ident.path()
     }
 

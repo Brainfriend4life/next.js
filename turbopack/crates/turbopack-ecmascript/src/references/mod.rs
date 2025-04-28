@@ -2784,7 +2784,7 @@ async fn analyze_amd_define_with_deps(
 
 /// Used to generate the "root" path to a __filename/__dirname/import.meta.url
 /// reference.
-pub async fn as_abs_path(path: Vc<FileSystemPath>) -> Result<JsValue> {
+pub async fn as_abs_path(path: FileSystemPath) -> Result<JsValue> {
     // TODO: This should be updated to generate a real system path on the fly
     // during runtime, so that the generated code is constant between systems
     // but the runtime evaluation can take into account the project's
@@ -2793,7 +2793,7 @@ pub async fn as_abs_path(path: Vc<FileSystemPath>) -> Result<JsValue> {
 }
 
 /// Generates an absolute path usable for `require.resolve()` calls.
-async fn require_resolve(path: Vc<FileSystemPath>) -> Result<JsValue> {
+async fn require_resolve(path: FileSystemPath) -> Result<JsValue> {
     Ok(format!("/ROOT/{}", path.await?.path.as_str()).into())
 }
 

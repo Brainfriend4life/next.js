@@ -281,7 +281,7 @@ impl PagesProject {
     }
 
     #[turbo_tasks::function]
-    async fn pages_dir(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn pages_dir(self: Vc<Self>) -> Result<FileSystemPath> {
         Ok(if let Some(pages) = self.pages_structure().await?.pages {
             pages.project_path()
         } else {
@@ -968,7 +968,7 @@ impl PageEndpoint {
     async fn internal_ssr_chunk(
         self: Vc<Self>,
         ty: SsrChunkType,
-        node_path: Vc<FileSystemPath>,
+        node_path: FileSystemPath,
         node_chunking_context: Vc<NodeJsChunkingContext>,
         edge_chunking_context: Vc<Box<dyn ChunkingContext>>,
         runtime_entries: Vc<EvaluatableAssets>,

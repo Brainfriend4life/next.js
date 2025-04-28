@@ -6,7 +6,7 @@ use super::{Issue, IssueSeverity, IssueStage, OptionStyledString, StyledString};
 #[turbo_tasks::value(shared)]
 pub struct CodeGenerationIssue {
     pub severity: ResolvedVc<IssueSeverity>,
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     pub title: ResolvedVc<StyledString>,
     pub message: ResolvedVc<StyledString>,
 }
@@ -29,7 +29,7 @@ impl Issue for CodeGenerationIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

@@ -45,7 +45,7 @@ impl ResolveReactRefreshResult {
 /// given path. Emits an issue if we can't.
 #[turbo_tasks::function]
 pub async fn assert_can_resolve_react_refresh(
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
     resolve_options_context: Vc<ResolveOptionsContext>,
 ) -> Result<Vc<ResolveReactRefreshResult>> {
     let resolve_options = apply_cjs_specific_options(turbopack_resolve::resolve::resolve_options(
@@ -72,7 +72,7 @@ pub async fn assert_can_resolve_react_refresh(
 /// An issue that occurred while resolving the React Refresh runtime module.
 #[turbo_tasks::value(shared)]
 pub struct ReactRefreshResolvingIssue {
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
@@ -93,7 +93,7 @@ impl Issue for ReactRefreshResolvingIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

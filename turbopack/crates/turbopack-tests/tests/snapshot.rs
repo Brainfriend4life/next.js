@@ -196,7 +196,7 @@ async fn run_inner_operation(resource: RcStr) -> Result<()> {
 }
 
 #[turbo_tasks::function(operation)]
-async fn run_test_operation(resource: RcStr) -> Result<Vc<FileSystemPath>> {
+async fn run_test_operation(resource: RcStr) -> Result<FileSystemPath> {
     let test_path = canonicalize(&resource)?;
     assert!(test_path.exists(), "{} does not exist", resource);
     assert!(
@@ -469,7 +469,7 @@ async fn run_test_operation(resource: RcStr) -> Result<Vc<FileSystemPath>> {
 async fn walk_asset(
     asset: ResolvedVc<Box<dyn OutputAsset>>,
     output_path: &ReadRef<FileSystemPath>,
-    seen: &mut FxHashSet<Vc<FileSystemPath>>,
+    seen: &mut FxHashSet<FileSystemPath>,
     queue: &mut VecDeque<ResolvedVc<Box<dyn OutputAsset>>>,
 ) -> Result<()> {
     let path = asset.path().resolve().await?;
@@ -501,7 +501,7 @@ async fn walk_asset(
 
 async fn maybe_load_env(
     _context: Vc<Box<dyn AssetContext>>,
-    path: Vc<FileSystemPath>,
+    path: FileSystemPath,
 ) -> Result<Option<Vc<Box<dyn Source>>>> {
     let dotenv_path = path.join("input/.env".into());
 

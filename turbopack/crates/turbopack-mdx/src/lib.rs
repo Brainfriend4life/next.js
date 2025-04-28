@@ -252,7 +252,7 @@ struct MdxTransformResult {
 #[turbo_tasks::value]
 struct MdxIssue {
     /// Place of message.
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
     loc: Option<IssueSource>,
     /// Reason for message (should use markdown).
     reason: String,
@@ -265,7 +265,7 @@ struct MdxIssue {
 #[turbo_tasks::value_impl]
 impl Issue for MdxIssue {
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

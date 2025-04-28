@@ -33,7 +33,7 @@ pub struct OptionPackageJson(Option<PackageJson>);
 /// Reads a package.json file (if it exists). If the file is unparseable, it
 /// emits a useful [Issue] pointing to the invalid location.
 #[turbo_tasks::function]
-pub async fn read_package_json(path: ResolvedVc<FileSystemPath>) -> Result<Vc<OptionPackageJson>> {
+pub async fn read_package_json(path: ResolvedFileSystemPath) -> Result<Vc<OptionPackageJson>> {
     let read = path.read_json().await?;
     match &*read {
         FileJsonContent::Content(_) => Ok(OptionPackageJson(Some(PackageJson(read))).cell()),
@@ -60,7 +60,7 @@ pub async fn read_package_json(path: ResolvedVc<FileSystemPath>) -> Result<Vc<Op
 /// Reusable Issue struct representing any problem with a `package.json`
 #[turbo_tasks::value(shared)]
 pub struct PackageJsonIssue {
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     pub error_message: RcStr,
 }
 
@@ -77,7 +77,7 @@ impl Issue for PackageJsonIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

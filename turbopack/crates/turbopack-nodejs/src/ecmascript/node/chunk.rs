@@ -78,7 +78,7 @@ impl EcmascriptBuildNodeChunk {
 #[turbo_tasks::value_impl]
 impl OutputAsset for EcmascriptBuildNodeChunk {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let ident = this.chunk.ident().with_modifier(modifier());
         Ok(this

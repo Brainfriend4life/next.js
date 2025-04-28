@@ -27,7 +27,7 @@ impl SingleItemCssChunkSourceMapAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for SingleItemCssChunkSourceMapAsset {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         Ok(this
             .chunk

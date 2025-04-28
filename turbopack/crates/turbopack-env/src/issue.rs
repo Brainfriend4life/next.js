@@ -5,7 +5,7 @@ use turbopack_core::issue::{Issue, IssueStage, OptionStyledString, StyledString}
 /// An issue that occurred while resolving the parsing or evaluating the .env.
 #[turbo_tasks::value(shared)]
 pub struct ProcessEnvIssue {
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     pub description: ResolvedVc<StyledString>,
 }
 
@@ -22,7 +22,7 @@ impl Issue for ProcessEnvIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

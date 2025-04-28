@@ -510,7 +510,7 @@ impl ProjectContainer {
     #[turbo_tasks::function]
     pub fn get_source_map(
         &self,
-        file_path: Vc<FileSystemPath>,
+        file_path: FileSystemPath,
         section: Option<RcStr>,
     ) -> Vc<OptionStringifiedSourceMap> {
         if let Some(map) = self.versioned_content_map {
@@ -595,7 +595,7 @@ impl ProjectDefineEnv {
 
 #[turbo_tasks::value(shared)]
 struct ConflictIssue {
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
     title: ResolvedVc<StyledString>,
     description: ResolvedVc<StyledString>,
     severity: ResolvedVc<IssueSeverity>,
@@ -614,7 +614,7 @@ impl Issue for ConflictIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 
@@ -672,23 +672,23 @@ impl Project {
     }
 
     #[turbo_tasks::function]
-    pub async fn node_root(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    pub async fn node_root(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         Ok(self.output_fs().root().join(this.dist_dir.clone()))
     }
 
     #[turbo_tasks::function]
-    pub fn client_root(self: Vc<Self>) -> Vc<FileSystemPath> {
+    pub fn client_root(self: Vc<Self>) -> FileSystemPath {
         self.client_fs().root()
     }
 
     #[turbo_tasks::function]
-    pub fn project_root_path(self: Vc<Self>) -> Vc<FileSystemPath> {
+    pub fn project_root_path(self: Vc<Self>) -> FileSystemPath {
         self.project_fs().root()
     }
 
     #[turbo_tasks::function]
-    pub async fn client_relative_path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    pub async fn client_relative_path(self: Vc<Self>) -> Result<FileSystemPath> {
         let next_config = self.next_config().await?;
         Ok(self.client_root().join(
             format!(
@@ -712,7 +712,7 @@ impl Project {
     }
 
     #[turbo_tasks::function]
-    pub async fn project_path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    pub async fn project_path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let root = self.project_root_path();
         let project_relative = this.project_path.strip_prefix(&*this.root_path).unwrap();
@@ -1782,7 +1782,7 @@ pub struct ModuleGraphs {
 #[turbo_tasks::function]
 async fn any_output_changed(
     roots: Vc<OutputAssets>,
-    path: Vc<FileSystemPath>,
+    path: FileSystemPath,
     server: bool,
 ) -> Result<Vc<Completion>> {
     let path = &path.await?;

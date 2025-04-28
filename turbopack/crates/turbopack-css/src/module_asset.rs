@@ -275,7 +275,7 @@ impl EcmascriptChunkPlaceable for ModuleCssAsset {
 #[turbo_tasks::value_impl]
 impl ResolveOrigin for ModuleCssAsset {
     #[turbo_tasks::function]
-    fn origin_path(&self) -> Vc<FileSystemPath> {
+    fn origin_path(&self) -> FileSystemPath {
         self.source.ident().path()
     }
 
@@ -462,7 +462,7 @@ impl Issue for CssModuleComposesIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         self.source.path()
     }
 

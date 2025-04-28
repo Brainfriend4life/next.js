@@ -71,7 +71,7 @@ pub async fn create_page_loader_entry_module(
 
 #[turbo_tasks::value(shared)]
 pub struct PageLoaderAsset {
-    pub server_root: ResolvedVc<FileSystemPath>,
+    pub server_root: ResolvedFileSystemPath,
     pub pathname: ResolvedVc<RcStr>,
     pub rebase_prefix_path: ResolvedVc<FileSystemPathOption>,
     pub page_chunks: ResolvedVc<OutputAssets>,
@@ -81,7 +81,7 @@ pub struct PageLoaderAsset {
 impl PageLoaderAsset {
     #[turbo_tasks::function]
     pub fn new(
-        server_root: ResolvedVc<FileSystemPath>,
+        server_root: ResolvedFileSystemPath,
         pathname: ResolvedVc<RcStr>,
         rebase_prefix_path: ResolvedVc<FileSystemPathOption>,
         page_chunks: ResolvedVc<OutputAssets>,
@@ -133,7 +133,7 @@ fn page_loader_chunk_reference_description() -> Vc<RcStr> {
 #[turbo_tasks::value_impl]
 impl OutputAsset for PageLoaderAsset {
     #[turbo_tasks::function]
-    async fn path(&self) -> Result<Vc<FileSystemPath>> {
+    async fn path(&self) -> Result<FileSystemPath> {
         let root = self
             .rebase_prefix_path
             .await?

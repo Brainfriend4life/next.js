@@ -44,7 +44,7 @@ struct Fallback {
 
 #[turbo_tasks::function]
 pub(super) async fn get_font_fallback(
-    lookup_path: ResolvedVc<FileSystemPath>,
+    lookup_path: ResolvedFileSystemPath,
     options_vc: Vc<NextFontGoogleOptions>,
 ) -> Result<Vc<FontFallback>> {
     let options = options_vc.await?;

@@ -82,32 +82,32 @@ use crate::{
 #[derive(Debug, Copy, Clone, Hash)]
 pub enum ServerContextType {
     Pages {
-        pages_dir: ResolvedVc<FileSystemPath>,
+        pages_dir: ResolvedFileSystemPath,
     },
     PagesApi {
-        pages_dir: ResolvedVc<FileSystemPath>,
+        pages_dir: ResolvedFileSystemPath,
     },
     PagesData {
-        pages_dir: ResolvedVc<FileSystemPath>,
+        pages_dir: ResolvedFileSystemPath,
     },
     AppSSR {
-        app_dir: ResolvedVc<FileSystemPath>,
+        app_dir: ResolvedFileSystemPath,
     },
     AppRSC {
-        app_dir: ResolvedVc<FileSystemPath>,
+        app_dir: ResolvedFileSystemPath,
         ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
         client_transition: Option<ResolvedVc<Box<dyn Transition>>>,
     },
     AppRoute {
-        app_dir: ResolvedVc<FileSystemPath>,
+        app_dir: ResolvedFileSystemPath,
         ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
     },
     Middleware {
-        app_dir: Option<ResolvedVc<FileSystemPath>>,
+        app_dir: Option<ResolvedFileSystemPath>,
         ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
     },
     Instrumentation {
-        app_dir: Option<ResolvedVc<FileSystemPath>>,
+        app_dir: Option<ResolvedFileSystemPath>,
         ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
     },
 }
@@ -127,7 +127,7 @@ impl ServerContextType {
 
 #[turbo_tasks::function]
 pub async fn get_server_resolve_options_context(
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: Value<ServerContextType>,
     mode: Vc<NextMode>,
     next_config: Vc<NextConfig>,
@@ -404,7 +404,7 @@ pub async fn get_server_compile_time_info(
 
 #[turbo_tasks::function]
 pub async fn get_server_module_options_context(
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     execution_context: ResolvedVc<ExecutionContext>,
     ty: Value<ServerContextType>,
     mode: Vc<NextMode>,
@@ -981,10 +981,10 @@ pub fn get_server_runtime_entries(
 #[turbo_tasks::function]
 pub async fn get_server_chunking_context_with_client_assets(
     mode: Vc<NextMode>,
-    root_path: ResolvedVc<FileSystemPath>,
-    node_root: ResolvedVc<FileSystemPath>,
+    root_path: ResolvedFileSystemPath,
+    node_root: ResolvedFileSystemPath,
     node_root_to_root_path: ResolvedVc<RcStr>,
-    client_root: ResolvedVc<FileSystemPath>,
+    client_root: ResolvedFileSystemPath,
     asset_prefix: ResolvedVc<Option<RcStr>>,
     environment: ResolvedVc<Environment>,
     module_id_strategy: ResolvedVc<Box<dyn ModuleIdStrategy>>,
@@ -1056,8 +1056,8 @@ pub async fn get_server_chunking_context_with_client_assets(
 #[turbo_tasks::function]
 pub async fn get_server_chunking_context(
     mode: Vc<NextMode>,
-    root_path: ResolvedVc<FileSystemPath>,
-    node_root: ResolvedVc<FileSystemPath>,
+    root_path: ResolvedFileSystemPath,
+    node_root: ResolvedFileSystemPath,
     node_root_to_root_path: ResolvedVc<RcStr>,
     environment: ResolvedVc<Environment>,
     module_id_strategy: ResolvedVc<Box<dyn ModuleIdStrategy>>,

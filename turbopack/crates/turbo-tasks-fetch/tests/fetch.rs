@@ -163,6 +163,6 @@ async fn errors_on_404() {
     .unwrap()
 }
 
-fn get_issue_context() -> Vc<FileSystemPath> {
+fn get_issue_context() -> FileSystemPath {
     DiskFileSystem::new("root".into(), "/".into(), vec![]).root()
 }

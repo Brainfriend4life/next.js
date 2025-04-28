@@ -593,7 +593,7 @@ impl Display for CommandOutput {
 }
 
 #[turbo_tasks::function]
-async fn exec_node(directory: RcStr, path: Vc<FileSystemPath>) -> Result<Vc<CommandOutput>> {
+async fn exec_node(directory: RcStr, path: FileSystemPath) -> Result<Vc<CommandOutput>> {
     let mut cmd = Command::new("node");
 
     let p = path.await?;

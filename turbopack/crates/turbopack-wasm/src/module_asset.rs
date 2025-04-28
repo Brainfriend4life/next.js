@@ -187,7 +187,7 @@ impl EcmascriptChunkPlaceable for WebAssemblyModuleAsset {
 #[turbo_tasks::value_impl]
 impl ResolveOrigin for WebAssemblyModuleAsset {
     #[turbo_tasks::function]
-    fn origin_path(&self) -> Vc<FileSystemPath> {
+    fn origin_path(&self) -> FileSystemPath {
         self.source.ident().path()
     }
 

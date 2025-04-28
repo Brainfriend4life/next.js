@@ -91,7 +91,7 @@ use crate::{
 #[turbo_tasks::value]
 pub struct AppProject {
     project: ResolvedVc<Project>,
-    app_dir: ResolvedVc<FileSystemPath>,
+    app_dir: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value(transparent)]
@@ -135,7 +135,7 @@ fn module_styles_rule_condition() -> RuleCondition {
 #[turbo_tasks::value_impl]
 impl AppProject {
     #[turbo_tasks::function]
-    pub fn new(project: ResolvedVc<Project>, app_dir: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn new(project: ResolvedVc<Project>, app_dir: ResolvedFileSystemPath) -> Vc<Self> {
         AppProject { project, app_dir }.cell()
     }
 
@@ -145,7 +145,7 @@ impl AppProject {
     }
 
     #[turbo_tasks::function]
-    fn app_dir(&self) -> Vc<FileSystemPath> {
+    fn app_dir(&self) -> FileSystemPath {
         *self.app_dir
     }
 
@@ -1048,7 +1048,7 @@ enum AppEndpointType {
         loader_tree: ResolvedVc<AppPageLoaderTree>,
     },
     Route {
-        path: ResolvedVc<FileSystemPath>,
+        path: ResolvedFileSystemPath,
         root_layouts: ResolvedVc<FileSystemPathVec>,
     },
     Metadata {
@@ -1080,7 +1080,7 @@ impl AppEndpoint {
     #[turbo_tasks::function]
     async fn app_route_entry(
         &self,
-        path: Vc<FileSystemPath>,
+        path: FileSystemPath,
         root_layouts: Vc<FileSystemPathVec>,
         next_config: Vc<NextConfig>,
     ) -> Result<Vc<AppEntry>> {
@@ -1708,7 +1708,7 @@ impl AppEndpoint {
         self: Vc<Self>,
         client_references: Vc<ClientReferenceGraphResult>,
         server_action_manifest_loader: ResolvedVc<Box<dyn EvaluatableAsset>>,
-        server_path: Vc<FileSystemPath>,
+        server_path: FileSystemPath,
         process_client_assets: bool,
         module_graph: Vc<ModuleGraph>,
     ) -> Result<Vc<OutputAssets>> {
@@ -1866,7 +1866,7 @@ impl AppEndpoint {
 }
 
 async fn create_app_paths_manifest(
-    node_root: Vc<FileSystemPath>,
+    node_root: FileSystemPath,
     original_name: &str,
     filename: RcStr,
 ) -> Result<ResolvedVc<Box<dyn OutputAsset>>> {

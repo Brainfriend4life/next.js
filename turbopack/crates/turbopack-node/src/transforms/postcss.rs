@@ -194,7 +194,7 @@ struct ProcessPostCssResult {
 #[turbo_tasks::function]
 async fn config_changed(
     asset_context: Vc<Box<dyn AssetContext>>,
-    postcss_config_path: Vc<FileSystemPath>,
+    postcss_config_path: FileSystemPath,
 ) -> Result<Vc<Completion>> {
     let config_asset = asset_context
         .process(
@@ -219,7 +219,7 @@ async fn config_changed(
 #[turbo_tasks::function]
 async fn extra_configs_changed(
     asset_context: Vc<Box<dyn AssetContext>>,
-    postcss_config_path: Vc<FileSystemPath>,
+    postcss_config_path: FileSystemPath,
 ) -> Result<Vc<Completion>> {
     let parent_path = postcss_config_path.parent();
 
@@ -262,7 +262,7 @@ async fn extra_configs_changed(
 
 #[turbo_tasks::value]
 pub struct JsonSource {
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     pub key: ResolvedVc<Option<RcStr>>,
     pub allow_json5: bool,
 }
@@ -271,7 +271,7 @@ pub struct JsonSource {
 impl JsonSource {
     #[turbo_tasks::function]
     pub fn new(
-        path: ResolvedVc<FileSystemPath>,
+        path: ResolvedFileSystemPath,
         key: ResolvedVc<Option<RcStr>>,
         allow_json5: bool,
     ) -> Vc<Self> {
@@ -333,8 +333,8 @@ impl Asset for JsonSource {
 
 #[turbo_tasks::function]
 pub(crate) async fn config_loader_source(
-    project_path: Vc<FileSystemPath>,
-    postcss_config_path: Vc<FileSystemPath>,
+    project_path: FileSystemPath,
+    postcss_config_path: FileSystemPath,
 ) -> Result<Vc<Box<dyn Source>>> {
     let postcss_config_path_value = &*postcss_config_path.await?;
     let postcss_config_path_filename = postcss_config_path_value.file_name();
@@ -397,8 +397,8 @@ pub(crate) async fn config_loader_source(
 #[turbo_tasks::function]
 async fn postcss_executor(
     asset_context: Vc<Box<dyn AssetContext>>,
-    project_path: Vc<FileSystemPath>,
-    postcss_config_path: Vc<FileSystemPath>,
+    project_path: FileSystemPath,
+    postcss_config_path: FileSystemPath,
 ) -> Result<Vc<ProcessResult>> {
     let config_asset = asset_context
         .process(
@@ -426,10 +426,10 @@ async fn postcss_executor(
 }
 
 async fn find_config_in_location(
-    project_path: Vc<FileSystemPath>,
+    project_path: FileSystemPath,
     location: PostCssConfigLocation,
     source: Vc<Box<dyn Source>>,
-) -> Result<Option<Vc<FileSystemPath>>> {
+) -> Result<Option<FileSystemPath>> {
     if let FindContextFileResult::Found(config_path, _) = *find_context_file_or_package_key(
         project_path,
         postcss_configs(),
@@ -575,7 +575,7 @@ impl PostCssTransformedAsset {
 
 #[turbo_tasks::value]
 struct PostCssTransformIssue {
-    source: ResolvedVc<FileSystemPath>,
+    source: ResolvedFileSystemPath,
     description: RcStr,
     severity: ResolvedVc<IssueSeverity>,
     title: RcStr,
@@ -584,7 +584,7 @@ struct PostCssTransformIssue {
 #[turbo_tasks::value_impl]
 impl Issue for PostCssTransformIssue {
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.source
     }
 

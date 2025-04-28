@@ -32,8 +32,8 @@ use crate::{
 
 #[derive(TaskInput, Clone, Hash, Debug, PartialEq, Eq, Serialize, Deserialize, TraceRawVcs)]
 pub struct ClientReferenceManifestOptions {
-    pub node_root: ResolvedVc<FileSystemPath>,
-    pub client_relative_path: ResolvedVc<FileSystemPath>,
+    pub node_root: ResolvedFileSystemPath,
+    pub client_relative_path: ResolvedFileSystemPath,
     pub entry_name: RcStr,
     pub client_references: ResolvedVc<ClientReferenceGraphResult>,
     pub client_references_chunks: ResolvedVc<ClientReferencesChunks>,

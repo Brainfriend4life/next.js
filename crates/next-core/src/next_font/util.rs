@@ -81,7 +81,7 @@ struct HasPath {
 }
 
 pub(crate) async fn can_use_next_font(
-    project_path: Vc<FileSystemPath>,
+    project_path: FileSystemPath,
     query: Vc<RcStr>,
 ) -> Result<bool> {
     let query_map = qstring::QString::from(&**query.await?);

@@ -20,11 +20,11 @@ use crate::{get_intermediate_asset, node_entry::NodeEntry, route_matcher::RouteM
 /// Creates a [NodeApiContentSource].
 #[turbo_tasks::function]
 pub fn create_node_api_source(
-    cwd: ResolvedVc<FileSystemPath>,
+    cwd: ResolvedFileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
     base_segments: Vec<BaseSegment>,
     route_type: RouteType,
-    server_root: ResolvedVc<FileSystemPath>,
+    server_root: ResolvedFileSystemPath,
     route_match: ResolvedVc<Box<dyn RouteMatcher>>,
     pathname: ResolvedVc<RcStr>,
     entry: ResolvedVc<Box<dyn NodeEntry>>,
@@ -56,11 +56,11 @@ pub fn create_node_api_source(
 /// to this directory.
 #[turbo_tasks::value]
 pub struct NodeApiContentSource {
-    cwd: ResolvedVc<FileSystemPath>,
+    cwd: ResolvedFileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
     base_segments: Vec<BaseSegment>,
     route_type: RouteType,
-    server_root: ResolvedVc<FileSystemPath>,
+    server_root: ResolvedFileSystemPath,
     pathname: ResolvedVc<RcStr>,
     route_match: ResolvedVc<Box<dyn RouteMatcher>>,
     entry: ResolvedVc<Box<dyn NodeEntry>>,

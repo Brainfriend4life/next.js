@@ -5,7 +5,7 @@ use turbopack_core::issue::{Issue, IssueStage, OptionStyledString, StyledString}
 #[turbo_tasks::value(shared)]
 #[derive(Copy, Clone)]
 pub struct RenderingIssue {
-    pub file_path: ResolvedVc<FileSystemPath>,
+    pub file_path: ResolvedFileSystemPath,
     pub message: ResolvedVc<StyledString>,
     pub status: Option<i32>,
 }
@@ -23,7 +23,7 @@ impl Issue for RenderingIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.file_path
     }
 

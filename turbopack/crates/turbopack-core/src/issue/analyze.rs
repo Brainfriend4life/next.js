@@ -70,7 +70,7 @@ impl Issue for AnalyzeIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         self.source_ident.path()
     }
 

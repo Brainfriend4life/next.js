@@ -383,7 +383,7 @@ impl Issue for FatalStreamIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         ServerFileSystem::new().root().join(self.resource.clone())
     }
 

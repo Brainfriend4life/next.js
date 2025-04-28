@@ -49,7 +49,7 @@ impl SwcPluginModule {
 
 #[turbo_tasks::value(shared)]
 struct UnsupportedSwcEcmaTransformPluginsIssue {
-    pub file_path: ResolvedVc<FileSystemPath>,
+    pub file_path: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
@@ -71,7 +71,7 @@ impl Issue for UnsupportedSwcEcmaTransformPluginsIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.file_path
     }
 

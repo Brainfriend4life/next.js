@@ -168,7 +168,7 @@ async fn resolve_extends(
 }
 
 async fn resolve_extends_rooted_or_relative(
-    lookup_path: Vc<FileSystemPath>,
+    lookup_path: FileSystemPath,
     request: Vc<Request>,
     resolve_options: Vc<ResolveOptions>,
     path: &str,
@@ -219,7 +219,7 @@ pub async fn read_from_tsconfigs<T>(
 #[turbo_tasks::value]
 #[derive(Default)]
 pub struct TsConfigResolveOptions {
-    base_url: Option<ResolvedVc<FileSystemPath>>,
+    base_url: Option<ResolvedFileSystemPath>,
     import_map: Option<ResolvedVc<ImportMap>>,
     is_module_resolution_nodenext: bool,
 }
@@ -235,7 +235,7 @@ impl ValueDefault for TsConfigResolveOptions {
 /// Returns the resolve options
 #[turbo_tasks::function]
 pub async fn tsconfig_resolve_options(
-    tsconfig: Vc<FileSystemPath>,
+    tsconfig: FileSystemPath,
 ) -> Result<Vc<TsConfigResolveOptions>> {
     let configs = read_tsconfigs(
         tsconfig.read(),
@@ -524,7 +524,7 @@ impl Issue for TsConfigIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         self.source_ident.path()
     }
 

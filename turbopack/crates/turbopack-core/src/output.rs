@@ -13,7 +13,7 @@ pub struct OptionOutputAsset(Option<ResolvedVc<Box<dyn OutputAsset>>>);
 pub trait OutputAsset: Asset {
     /// The identifier of the [OutputAsset]. It's expected to be unique and
     /// capture all properties of the [OutputAsset].
-    fn path(&self) -> Vc<FileSystemPath>;
+    fn path(&self) -> FileSystemPath;
 
     /// Other references [OutputAsset]s from this [OutputAsset].
     fn references(self: Vc<Self>) -> Vc<OutputAssets> {

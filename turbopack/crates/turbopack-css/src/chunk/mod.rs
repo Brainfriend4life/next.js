@@ -322,7 +322,7 @@ fn chunk_item_key() -> Vc<RcStr> {
 #[turbo_tasks::value_impl]
 impl OutputAsset for CssChunk {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let ident = self.ident_for_path();
 
         Ok(self

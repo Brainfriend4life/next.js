@@ -41,7 +41,7 @@ impl WebAssemblyAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for WebAssemblyAsset {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let ident = this.source.ident().with_modifier(modifier());
         Ok(this

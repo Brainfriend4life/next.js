@@ -131,7 +131,7 @@ impl CustomTransformer for NextPageStaticInfo {
 
 #[turbo_tasks::value(shared)]
 pub struct PageStaticInfoIssue {
-    pub file_path: ResolvedVc<FileSystemPath>,
+    pub file_path: ResolvedFileSystemPath,
     pub messages: Vec<String>,
     pub severity: IssueSeverity,
 }
@@ -154,7 +154,7 @@ impl Issue for PageStaticInfoIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.file_path
     }
 

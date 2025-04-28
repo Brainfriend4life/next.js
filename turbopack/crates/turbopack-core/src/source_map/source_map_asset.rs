@@ -19,7 +19,7 @@ use crate::{
 #[derive(PartialEq, Eq, Serialize, Deserialize, NonLocalValue, TraceRawVcs, ValueDebugFormat)]
 enum PathType {
     Fixed {
-        path: ResolvedVc<FileSystemPath>,
+        path: ResolvedFileSystemPath,
     },
     FromIdent {
         chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
@@ -54,7 +54,7 @@ impl SourceMapAsset {
 
     #[turbo_tasks::function]
     pub fn new_fixed(
-        path: ResolvedVc<FileSystemPath>,
+        path: ResolvedFileSystemPath,
         generate_source_map: ResolvedVc<Box<dyn GenerateSourceMap>>,
     ) -> Vc<Self> {
         SourceMapAsset {
@@ -68,7 +68,7 @@ impl SourceMapAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for SourceMapAsset {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         // NOTE(alexkirsz) We used to include the asset's version id in the path,
         // but this caused `all_assets_map` to be recomputed on every change.
         let this = self.await?;

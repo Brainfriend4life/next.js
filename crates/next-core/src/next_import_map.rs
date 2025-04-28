@@ -89,7 +89,7 @@ const EDGE_UNSUPPORTED_NODE_INTERNALS: [&str; 44] = [
 /// Computes the Next-specific client import map.
 #[turbo_tasks::function]
 pub async fn get_next_client_import_map(
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: Value<ClientContextType>,
     next_config: Vc<NextConfig>,
     execution_context: Vc<ExecutionContext>,
@@ -285,7 +285,7 @@ pub async fn get_next_client_fallback_import_map(
 /// Computes the Next-specific server-side import map.
 #[turbo_tasks::function]
 pub async fn get_next_server_import_map(
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: Value<ServerContextType>,
     next_config: Vc<NextConfig>,
     execution_context: Vc<ExecutionContext>,
@@ -380,7 +380,7 @@ pub async fn get_next_server_import_map(
 /// Computes the Next-specific edge-side import map.
 #[turbo_tasks::function]
 pub async fn get_next_edge_import_map(
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: Value<ServerContextType>,
     next_config: Vc<NextConfig>,
     execution_context: Vc<ExecutionContext>,
@@ -521,8 +521,8 @@ async fn insert_unsupported_node_internal_aliases(import_map: &mut ImportMap) ->
 }
 
 pub fn get_next_client_resolved_map(
-    _context: Vc<FileSystemPath>,
-    _root: ResolvedVc<FileSystemPath>,
+    _context: FileSystemPath,
+    _root: ResolvedFileSystemPath,
     _mode: NextMode,
 ) -> Vc<ResolvedMap> {
     let glob_mappings = vec![];
@@ -560,18 +560,18 @@ static NEXT_ALIASES: [(&str, &str); 23] = [
 
 async fn insert_next_server_special_aliases(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: ServerContextType,
     runtime: NextRuntime,
     next_config: Vc<NextConfig>,
 ) -> Result<()> {
     let external_cjs_if_node =
-        move |context_dir: ResolvedVc<FileSystemPath>, request: &str| match runtime {
+        move |context_dir: ResolvedFileSystemPath, request: &str| match runtime {
             NextRuntime::Edge => request_to_import_mapping(context_dir, request),
             NextRuntime::NodeJs => external_request_to_cjs_import_mapping(context_dir, request),
         };
     let external_esm_if_node =
-        move |context_dir: ResolvedVc<FileSystemPath>, request: &str| match runtime {
+        move |context_dir: ResolvedFileSystemPath, request: &str| match runtime {
             NextRuntime::Edge => request_to_import_mapping(context_dir, request),
             NextRuntime::NodeJs => external_request_to_esm_import_mapping(context_dir, request),
         };
@@ -694,7 +694,7 @@ async fn get_react_client_package(next_config: Vc<NextConfig>) -> Result<&'stati
 
 async fn rsc_aliases(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     ty: ServerContextType,
     runtime: NextRuntime,
     next_config: Vc<NextConfig>,
@@ -817,7 +817,7 @@ pub fn mdx_import_source_file() -> RcStr {
 // Keep in sync with getOptimizedModuleAliases in webpack-config.ts
 async fn insert_optimized_module_aliases(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
 ) -> Result<()> {
     insert_exact_alias_map(
         import_map,
@@ -841,7 +841,7 @@ async fn insert_optimized_module_aliases(
 // Make sure to not add any external requests here.
 async fn insert_next_shared_aliases(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     execution_context: Vc<ExecutionContext>,
     next_config: Vc<NextConfig>,
     is_runtime_edge: bool,
@@ -995,7 +995,7 @@ async fn insert_next_shared_aliases(
 }
 
 #[turbo_tasks::function]
-pub async fn get_next_package(context_directory: Vc<FileSystemPath>) -> Result<Vc<FileSystemPath>> {
+pub async fn get_next_package(context_directory: FileSystemPath) -> Result<FileSystemPath> {
     let result = resolve(
         context_directory,
         Value::new(ReferenceType::CommonJs(CommonJsReferenceSubType::Undefined)),
@@ -1011,7 +1011,7 @@ pub async fn get_next_package(context_directory: Vc<FileSystemPath>) -> Result<V
 
 pub async fn insert_alias_option<const N: usize>(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     alias_options: Vc<ResolveAliasMap>,
     conditions: [&'static str; N],
 ) -> Result<()> {
@@ -1027,7 +1027,7 @@ pub async fn insert_alias_option<const N: usize>(
 fn export_value_to_import_mapping(
     value: &SubpathValue,
     conditions: &BTreeMap<RcStr, ConditionValue>,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
 ) -> Option<ResolvedVc<ImportMapping>> {
     let mut result = Vec::new();
     value.add_results(
@@ -1059,7 +1059,7 @@ fn export_value_to_import_mapping(
 
 fn insert_exact_alias_map(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     map: FxIndexMap<&'static str, String>,
 ) {
     for (pattern, request) in map {
@@ -1069,7 +1069,7 @@ fn insert_exact_alias_map(
 
 fn insert_wildcard_alias_map(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     map: FxIndexMap<&'static str, String>,
 ) {
     for (pattern, request) in map {
@@ -1094,7 +1094,7 @@ fn insert_alias_to_alternatives<'a>(
 fn insert_package_alias(
     import_map: &mut ImportMap,
     prefix: &str,
-    package_root: ResolvedVc<FileSystemPath>,
+    package_root: ResolvedFileSystemPath,
 ) {
     import_map.insert_wildcard_alias(
         prefix,
@@ -1118,7 +1118,7 @@ async fn insert_turbopack_dev_alias(import_map: &mut ImportMap) -> Result<()> {
 /// Handles instrumentation-client.ts bundling logic
 async fn insert_instrumentation_client_alias(
     import_map: &mut ImportMap,
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
 ) -> Result<()> {
     insert_alias_to_alternatives(
         import_map,
@@ -1148,7 +1148,7 @@ fn insert_exact_alias_or_js(
 /// Creates a direct import mapping to the result of resolving a request
 /// in a context.
 fn request_to_import_mapping(
-    context_path: ResolvedVc<FileSystemPath>,
+    context_path: ResolvedFileSystemPath,
     request: &str,
 ) -> ResolvedVc<ImportMapping> {
     ImportMapping::PrimaryAlternative(request.into(), Some(context_path)).resolved_cell()
@@ -1157,7 +1157,7 @@ fn request_to_import_mapping(
 /// Creates a direct import mapping to the result of resolving an external
 /// request.
 fn external_request_to_cjs_import_mapping(
-    context_dir: ResolvedVc<FileSystemPath>,
+    context_dir: ResolvedFileSystemPath,
     request: &str,
 ) -> ResolvedVc<ImportMapping> {
     ImportMapping::PrimaryAlternativeExternal {
@@ -1172,7 +1172,7 @@ fn external_request_to_cjs_import_mapping(
 /// Creates a direct import mapping to the result of resolving an external
 /// request.
 fn external_request_to_esm_import_mapping(
-    context_dir: ResolvedVc<FileSystemPath>,
+    context_dir: ResolvedFileSystemPath,
     request: &str,
 ) -> ResolvedVc<ImportMapping> {
     ImportMapping::PrimaryAlternativeExternal {

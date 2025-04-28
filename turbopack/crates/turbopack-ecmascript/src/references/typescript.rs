@@ -16,7 +16,7 @@ use crate::typescript::TsConfigModuleAsset;
 #[turbo_tasks::value]
 #[derive(Hash, Clone, Debug)]
 pub struct TsConfigReference {
-    pub tsconfig: ResolvedVc<FileSystemPath>,
+    pub tsconfig: ResolvedFileSystemPath,
     pub origin: ResolvedVc<Box<dyn ResolveOrigin>>,
 }
 
@@ -25,7 +25,7 @@ impl TsConfigReference {
     #[turbo_tasks::function]
     pub fn new(
         origin: ResolvedVc<Box<dyn ResolveOrigin>>,
-        tsconfig: ResolvedVc<FileSystemPath>,
+        tsconfig: ResolvedFileSystemPath,
     ) -> Vc<Self> {
         Self::cell(TsConfigReference { tsconfig, origin })
     }

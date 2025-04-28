@@ -101,7 +101,7 @@ impl EcmascriptBrowserChunk {
 #[turbo_tasks::value_impl]
 impl OutputAsset for EcmascriptBrowserChunk {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let ident = this.ident_for_path();
         Ok(this

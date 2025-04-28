@@ -6,14 +6,14 @@ use crate::SpecifiedModuleType;
 
 #[turbo_tasks::value(shared)]
 pub struct SpecifiedModuleTypeIssue {
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     pub specified_type: SpecifiedModuleType,
 }
 
 #[turbo_tasks::value_impl]
 impl Issue for SpecifiedModuleTypeIssue {
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.path
     }
 

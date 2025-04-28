@@ -16,13 +16,13 @@ use turbopack_core::{
 /// Resolve plugins that warns when importing a sass file.
 #[turbo_tasks::value]
 pub(crate) struct UnsupportedSassResolvePlugin {
-    root: ResolvedVc<FileSystemPath>,
+    root: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl UnsupportedSassResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(root: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn new(root: ResolvedFileSystemPath) -> Vc<Self> {
         UnsupportedSassResolvePlugin { root }.cell()
     }
 }
@@ -37,8 +37,8 @@ impl AfterResolvePlugin for UnsupportedSassResolvePlugin {
     #[turbo_tasks::function]
     async fn after_resolve(
         &self,
-        fs_path: ResolvedVc<FileSystemPath>,
-        lookup_path: ResolvedVc<FileSystemPath>,
+        fs_path: ResolvedFileSystemPath,
+        lookup_path: ResolvedFileSystemPath,
         _reference_type: Value<ReferenceType>,
         request: ResolvedVc<Request>,
     ) -> Result<Vc<ResolveResultOption>> {
@@ -58,7 +58,7 @@ impl AfterResolvePlugin for UnsupportedSassResolvePlugin {
 
 #[turbo_tasks::value(shared)]
 struct UnsupportedSassModuleIssue {
-    file_path: ResolvedVc<FileSystemPath>,
+    file_path: ResolvedFileSystemPath,
     request: ResolvedVc<Request>,
 }
 
@@ -82,7 +82,7 @@ impl Issue for UnsupportedSassModuleIssue {
     }
 
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         *self.file_path
     }
 

@@ -73,13 +73,13 @@ struct FontData(FxIndexMap<RcStr, FontDataEntry>);
 
 #[turbo_tasks::value(shared)]
 pub(crate) struct NextFontGoogleReplacer {
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextFontGoogleReplacer {
     #[turbo_tasks::function]
-    pub fn new(project_path: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn new(project_path: ResolvedFileSystemPath) -> Vc<Self> {
         Self::cell(NextFontGoogleReplacer { project_path })
     }
 
@@ -153,7 +153,7 @@ impl ImportMappingReplacement for NextFontGoogleReplacer {
     #[turbo_tasks::function]
     async fn result(
         self: Vc<Self>,
-        _context: Vc<FileSystemPath>,
+        _context: FileSystemPath,
         request: Vc<Request>,
     ) -> Result<Vc<ImportMapResult>> {
         let request = &*request.await?;
@@ -178,7 +178,7 @@ impl ImportMappingReplacement for NextFontGoogleReplacer {
 
 #[turbo_tasks::value(shared)]
 pub struct NextFontGoogleCssModuleReplacer {
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
     execution_context: ResolvedVc<ExecutionContext>,
 }
 
@@ -186,7 +186,7 @@ pub struct NextFontGoogleCssModuleReplacer {
 impl NextFontGoogleCssModuleReplacer {
     #[turbo_tasks::function]
     pub fn new(
-        project_path: ResolvedVc<FileSystemPath>,
+        project_path: ResolvedFileSystemPath,
         execution_context: ResolvedVc<ExecutionContext>,
     ) -> Vc<Self> {
         Self::cell(NextFontGoogleCssModuleReplacer {
@@ -283,7 +283,7 @@ impl ImportMappingReplacement for NextFontGoogleCssModuleReplacer {
     #[turbo_tasks::function]
     async fn result(
         self: Vc<Self>,
-        _context: Vc<FileSystemPath>,
+        _context: FileSystemPath,
         request: Vc<Request>,
     ) -> Result<Vc<ImportMapResult>> {
         let request = &*request.await?;
@@ -310,13 +310,13 @@ struct NextFontGoogleFontFileOptions {
 
 #[turbo_tasks::value(shared)]
 pub struct NextFontGoogleFontFileReplacer {
-    project_path: ResolvedVc<FileSystemPath>,
+    project_path: ResolvedFileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextFontGoogleFontFileReplacer {
     #[turbo_tasks::function]
-    pub fn new(project_path: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn new(project_path: ResolvedFileSystemPath) -> Vc<Self> {
         Self::cell(NextFontGoogleFontFileReplacer { project_path })
     }
 }
@@ -334,7 +334,7 @@ impl ImportMappingReplacement for NextFontGoogleFontFileReplacer {
     #[turbo_tasks::function]
     async fn result(
         &self,
-        _context: Vc<FileSystemPath>,
+        _context: FileSystemPath,
         request: Vc<Request>,
     ) -> Result<Vc<ImportMapResult>> {
         let request = &*request.await?;
@@ -389,7 +389,7 @@ impl ImportMappingReplacement for NextFontGoogleFontFileReplacer {
 }
 
 #[turbo_tasks::function]
-async fn load_font_data(project_root: ResolvedVc<FileSystemPath>) -> Result<Vc<FontData>> {
+async fn load_font_data(project_root: ResolvedFileSystemPath) -> Result<Vc<FontData>> {
     let data: FontData = load_next_js_templateon(
         project_root,
         "dist/compiled/@next/font/dist/google/font-data.json".into(),
@@ -598,7 +598,7 @@ async fn font_file_options_from_query_map(
 
 async fn fetch_real_stylesheet(
     stylesheet_url: Vc<RcStr>,
-    css_virtual_path: Vc<FileSystemPath>,
+    css_virtual_path: FileSystemPath,
 ) -> Result<Option<Vc<RcStr>>> {
     let body = fetch_from_google_fonts(stylesheet_url, css_virtual_path).await?;
 
@@ -607,7 +607,7 @@ async fn fetch_real_stylesheet(
 
 async fn fetch_from_google_fonts(
     url: Vc<RcStr>,
-    virtual_path: Vc<FileSystemPath>,
+    virtual_path: FileSystemPath,
 ) -> Result<Option<Vc<HttpResponseBody>>> {
     let result = fetch(
         url,

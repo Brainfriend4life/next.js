@@ -176,19 +176,19 @@ impl BrowserChunkingContextBuilder {
 pub struct BrowserChunkingContext {
     name: Option<RcStr>,
     /// The root path of the project
-    root_path: ResolvedVc<FileSystemPath>,
+    root_path: ResolvedFileSystemPath,
     /// Whether to write file sources as file:// paths in source maps
     should_use_file_source_map_uris: bool,
     /// This path is used to compute the url to request chunks from
-    output_root: ResolvedVc<FileSystemPath>,
+    output_root: ResolvedFileSystemPath,
     /// The relative path from the output_root to the root_path.
     output_root_to_root_path: ResolvedVc<RcStr>,
     /// This path is used to compute the url to request assets from
-    client_root: ResolvedVc<FileSystemPath>,
+    client_root: ResolvedFileSystemPath,
     /// Chunks are placed at this path
-    chunk_root_path: ResolvedVc<FileSystemPath>,
+    chunk_root_path: ResolvedFileSystemPath,
     /// Static assets are placed at this path
-    asset_root_path: ResolvedVc<FileSystemPath>,
+    asset_root_path: ResolvedFileSystemPath,
     /// Base path that will be prepended to all chunk URLs when loading them.
     /// This path will not appear in chunk paths or chunk data.
     chunk_base_path: ResolvedVc<Option<RcStr>>,
@@ -224,12 +224,12 @@ pub struct BrowserChunkingContext {
 
 impl BrowserChunkingContext {
     pub fn builder(
-        root_path: ResolvedVc<FileSystemPath>,
-        output_root: ResolvedVc<FileSystemPath>,
+        root_path: ResolvedFileSystemPath,
+        output_root: ResolvedFileSystemPath,
         output_root_to_root_path: ResolvedVc<RcStr>,
-        client_root: ResolvedVc<FileSystemPath>,
-        chunk_root_path: ResolvedVc<FileSystemPath>,
-        asset_root_path: ResolvedVc<FileSystemPath>,
+        client_root: ResolvedFileSystemPath,
+        chunk_root_path: ResolvedFileSystemPath,
+        asset_root_path: ResolvedFileSystemPath,
         environment: ResolvedVc<Environment>,
         runtime_type: RuntimeType,
     ) -> BrowserChunkingContextBuilder {
@@ -372,12 +372,12 @@ impl ChunkingContext for BrowserChunkingContext {
     }
 
     #[turbo_tasks::function]
-    fn root_path(&self) -> Vc<FileSystemPath> {
+    fn root_path(&self) -> FileSystemPath {
         *self.root_path
     }
 
     #[turbo_tasks::function]
-    fn output_root(&self) -> Vc<FileSystemPath> {
+    fn output_root(&self) -> FileSystemPath {
         *self.output_root
     }
 
@@ -392,7 +392,7 @@ impl ChunkingContext for BrowserChunkingContext {
     }
 
     #[turbo_tasks::function]
-    async fn chunk_root_path(&self) -> Vc<FileSystemPath> {
+    async fn chunk_root_path(&self) -> FileSystemPath {
         *self.chunk_root_path
     }
 
@@ -402,7 +402,7 @@ impl ChunkingContext for BrowserChunkingContext {
         asset: Option<Vc<Box<dyn Asset>>>,
         ident: Vc<AssetIdent>,
         extension: RcStr,
-    ) -> Result<Vc<FileSystemPath>> {
+    ) -> Result<FileSystemPath> {
         let root_path = self.chunk_root_path;
         let name = match self.content_hashing {
             None => {
@@ -432,7 +432,7 @@ impl ChunkingContext for BrowserChunkingContext {
     }
 
     #[turbo_tasks::function]
-    async fn asset_url(&self, ident: Vc<FileSystemPath>) -> Result<Vc<RcStr>> {
+    async fn asset_url(&self, ident: FileSystemPath) -> Result<Vc<RcStr>> {
         let asset_path = ident.await?.to_string();
         let asset_path = asset_path
             .strip_prefix(&format!("{}/", self.client_root.await?.path))
@@ -473,7 +473,7 @@ impl ChunkingContext for BrowserChunkingContext {
         &self,
         content_hash: RcStr,
         original_asset_ident: Vc<AssetIdent>,
-    ) -> Result<Vc<FileSystemPath>> {
+    ) -> Result<FileSystemPath> {
         let source_path = original_asset_ident.path().await?;
         let basename = source_path.file_name();
         let asset_path = match source_path.extension_ref() {
@@ -659,7 +659,7 @@ impl ChunkingContext for BrowserChunkingContext {
     #[turbo_tasks::function]
     fn entry_chunk_group(
         self: Vc<Self>,
-        _path: Vc<FileSystemPath>,
+        _path: FileSystemPath,
         _evaluatable_assets: Vc<EvaluatableAssets>,
         _module_graph: Vc<ModuleGraph>,
         _extra_chunks: Vc<OutputAssets>,

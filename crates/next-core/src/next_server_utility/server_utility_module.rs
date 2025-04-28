@@ -43,7 +43,7 @@ impl NextServerUtilityModule {
     }
 
     #[turbo_tasks::function]
-    pub fn server_path(&self) -> Vc<FileSystemPath> {
+    pub fn server_path(&self) -> FileSystemPath {
         self.module.ident().path()
     }
 }

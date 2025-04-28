@@ -14,7 +14,7 @@ use crate::resolve::ModulePart;
 #[derive(Clone, Debug, Hash)]
 pub struct AssetIdent {
     /// The primary path of the asset
-    pub path: ResolvedVc<FileSystemPath>,
+    pub path: ResolvedFileSystemPath,
     /// The query string of the asset (e.g. `?foo=bar`)
     pub query: ResolvedVc<RcStr>,
     /// The fragment of the asset (e.g. `#foo`)
@@ -125,9 +125,9 @@ impl AssetIdent {
         ident.into_value().cell()
     }
 
-    /// Creates an [AssetIdent] from a [Vc<FileSystemPath>]
+    /// Creates an [AssetIdent] from a [FileSystemPath]
     #[turbo_tasks::function]
-    pub fn from_path(path: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn from_path(path: ResolvedFileSystemPath) -> Vc<Self> {
         Self::new(Value::new(AssetIdent {
             path,
             query: ResolvedVc::cell(RcStr::default()),
@@ -162,7 +162,7 @@ impl AssetIdent {
     }
 
     #[turbo_tasks::function]
-    pub fn with_path(&self, path: ResolvedVc<FileSystemPath>) -> Vc<Self> {
+    pub fn with_path(&self, path: ResolvedFileSystemPath) -> Vc<Self> {
         let mut this = self.clone();
         this.path = path;
         Self::new(Value::new(this))
@@ -190,7 +190,7 @@ impl AssetIdent {
     }
 
     #[turbo_tasks::function]
-    pub fn path(&self) -> Vc<FileSystemPath> {
+    pub fn path(&self) -> FileSystemPath {
         *self.path
     }
 
@@ -206,7 +206,7 @@ impl AssetIdent {
     #[turbo_tasks::function]
     pub async fn output_name(
         &self,
-        context_path: Vc<FileSystemPath>,
+        context_path: FileSystemPath,
         expected_extension: RcStr,
     ) -> Result<Vc<RcStr>> {
         // TODO(PACK-2140): restrict character set to A–Za–z0–9-_.~'()

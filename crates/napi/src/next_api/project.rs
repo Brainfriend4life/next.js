@@ -452,7 +452,7 @@ pub async fn project_new(
 /// - https://x.com/jarredsumner/status/1637549427677364224
 /// - https://github.com/oven-sh/bun/blob/06a9aa80c38b08b3148bfeabe560/src/install/install.zig#L3038
 #[tracing::instrument]
-async fn benchmark_file_io(directory: Vc<FileSystemPath>) -> Result<Vc<Completion>> {
+async fn benchmark_file_io(directory: FileSystemPath) -> Result<Vc<Completion>> {
     // try to get the real file path on disk so that we can use it with tokio
     let fs = Vc::try_resolve_downcast_type::<DiskFileSystem>(directory.fs())
         .await?

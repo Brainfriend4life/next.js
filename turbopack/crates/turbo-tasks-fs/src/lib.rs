@@ -197,16 +197,16 @@ fn create_semaphore() -> tokio::sync::Semaphore {
 #[turbo_tasks::value_trait]
 pub trait FileSystem: ValueToString {
     /// Returns the path to the root of the file system.
-    fn root(self: Vc<Self>) -> Vc<FileSystemPath> {
+    fn root(self: Vc<Self>) -> FileSystemPath {
         FileSystemPath::new_normalized(self, RcStr::default())
     }
-    fn read(self: Vc<Self>, fs_path: Vc<FileSystemPath>) -> Vc<FileContent>;
-    fn read_link(self: Vc<Self>, fs_path: Vc<FileSystemPath>) -> Vc<LinkContent>;
-    fn raw_read_dir(self: Vc<Self>, fs_path: Vc<FileSystemPath>) -> Vc<RawDirectoryContent>;
-    fn track(self: Vc<Self>, fs_path: Vc<FileSystemPath>) -> Vc<Completion>;
-    fn write(self: Vc<Self>, fs_path: Vc<FileSystemPath>, content: Vc<FileContent>) -> Vc<()>;
-    fn write_link(self: Vc<Self>, fs_path: Vc<FileSystemPath>, target: Vc<LinkContent>) -> Vc<()>;
-    fn metadata(self: Vc<Self>, fs_path: Vc<FileSystemPath>) -> Vc<FileMeta>;
+    fn read(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<FileContent>;
+    fn read_link(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<LinkContent>;
+    fn raw_read_dir(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<RawDirectoryContent>;
+    fn track(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<Completion>;
+    fn write(self: Vc<Self>, fs_path: FileSystemPath, content: Vc<FileContent>) -> Vc<()>;
+    fn write_link(self: Vc<Self>, fs_path: FileSystemPath, target: Vc<LinkContent>) -> Vc<()>;
+    fn metadata(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<FileMeta>;
 }
 
 #[derive(Serialize, Deserialize, TraceRawVcs, ValueDebugFormat, NonLocalValue)]
@@ -440,7 +440,7 @@ impl DiskFileSystem {
         self.inner.watcher.stop_watching();
     }
 
-    pub async fn to_sys_path(&self, fs_path: Vc<FileSystemPath>) -> Result<PathBuf> {
+    pub async fn to_sys_path(&self, fs_path: FileSystemPath) -> Result<PathBuf> {
         // just in case there's a windows unc path prefix we remove it with `dunce`
         let path = self.inner.root_path();
         let fs_path = fs_path.await?;
@@ -520,7 +520,7 @@ impl Debug for DiskFileSystem {
 #[turbo_tasks::value_impl]
 impl FileSystem for DiskFileSystem {
     #[turbo_tasks::function(fs)]
-    async fn read(&self, fs_path: Vc<FileSystemPath>) -> Result<Vc<FileContent>> {
+    async fn read(&self, fs_path: FileSystemPath) -> Result<Vc<FileContent>> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         self.inner.register_read_invalidator(&full_path)?;
@@ -546,7 +546,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn raw_read_dir(&self, fs_path: Vc<FileSystemPath>) -> Result<Vc<RawDirectoryContent>> {
+    async fn raw_read_dir(&self, fs_path: FileSystemPath) -> Result<Vc<RawDirectoryContent>> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         self.inner.register_dir_invalidator(&full_path)?;
@@ -601,7 +601,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn read_link(&self, fs_path: Vc<FileSystemPath>) -> Result<Vc<LinkContent>> {
+    async fn read_link(&self, fs_path: FileSystemPath) -> Result<Vc<LinkContent>> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         self.inner.register_read_invalidator(&full_path)?;
@@ -687,7 +687,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn track(&self, fs_path: Vc<FileSystemPath>) -> Result<Vc<Completion>> {
+    async fn track(&self, fs_path: FileSystemPath) -> Result<Vc<Completion>> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         self.inner.register_read_invalidator(&full_path)?;
@@ -695,7 +695,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn write(&self, fs_path: Vc<FileSystemPath>, content: Vc<FileContent>) -> Result<()> {
+    async fn write(&self, fs_path: FileSystemPath, content: Vc<FileContent>) -> Result<()> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         let content = content.await?;
@@ -825,7 +825,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn write_link(&self, fs_path: Vc<FileSystemPath>, target: Vc<LinkContent>) -> Result<()> {
+    async fn write_link(&self, fs_path: FileSystemPath, target: Vc<LinkContent>) -> Result<()> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         let content = target.await?;
@@ -953,7 +953,7 @@ impl FileSystem for DiskFileSystem {
     }
 
     #[turbo_tasks::function(fs)]
-    async fn metadata(&self, fs_path: Vc<FileSystemPath>) -> Result<Vc<FileMeta>> {
+    async fn metadata(&self, fs_path: FileSystemPath) -> Result<Vc<FileMeta>> {
         mark_session_dependent();
         let full_path = self.to_sys_path(fs_path).await?;
         self.inner.register_read_invalidator(&full_path)?;
@@ -1143,7 +1143,7 @@ impl FileSystemPath {
     ///
     /// Note: We are hashing the _file name stem_, not the _contents_.
     ///
-    /// If you have a [`Vc<FileSystemPath>`], call
+    /// If you have a [`FileSystemPath`], call
     /// [`FileSystemPath::truncate_file_name_with_hash_vc`] instead.
     pub fn truncate_file_name_with_hash(&self) -> Result<Cow<'_, FileSystemPath>> {
         let (parent, stem, extension) = self.split_file_stem_extension();
@@ -1192,7 +1192,7 @@ impl FileSystemPath {
 }
 
 #[turbo_tasks::value(transparent)]
-pub struct FileSystemPathOption(Option<ResolvedVc<FileSystemPath>>);
+pub struct FileSystemPathOption(Option<ResolvedFileSystemPath>);
 
 #[turbo_tasks::value_impl]
 impl FileSystemPathOption {
@@ -1204,7 +1204,7 @@ impl FileSystemPathOption {
 
 #[turbo_tasks::value_impl]
 impl FileSystemPath {
-    /// Create a new Vc<FileSystemPath> from a path withing a FileSystem. The
+    /// Create a new FileSystemPath from a path withing a FileSystem. The
     /// /-separated path is expected to be already normalized (this is asserted
     /// in dev mode).
     #[turbo_tasks::function]
@@ -1235,7 +1235,7 @@ impl FileSystemPath {
             Ok(Self::new_normalized(*this.fs, path.into()))
         } else {
             bail!(
-                "Vc<FileSystemPath>(\"{}\").join(\"{}\") leaves the filesystem root",
+                "FileSystemPath(\"{}\").join(\"{}\") leaves the filesystem root",
                 this.path,
                 path
             );
@@ -1248,7 +1248,7 @@ impl FileSystemPath {
         let this = self.await?;
         if path.contains('/') {
             bail!(
-                "Vc<FileSystemPath>(\"{}\").append(\"{}\") must not append '/'",
+                "FileSystemPath(\"{}\").append(\"{}\") must not append '/'",
                 this.path,
                 path
             )
@@ -1266,7 +1266,7 @@ impl FileSystemPath {
         let this = self.await?;
         if appending.contains('/') {
             bail!(
-                "Vc<FileSystemPath>(\"{}\").append_to_stem(\"{}\") must not append '/'",
+                "FileSystemPath(\"{}\").append_to_stem(\"{}\") must not append '/'",
                 this.path,
                 appending
             )
@@ -1343,19 +1343,19 @@ impl FileSystemPath {
     }
 
     #[turbo_tasks::function]
-    pub async fn is_inside(&self, other: Vc<FileSystemPath>) -> Result<Vc<bool>> {
+    pub async fn is_inside(&self, other: FileSystemPath) -> Result<Vc<bool>> {
         Ok(Vc::cell(self.is_inside_ref(&*other.await?)))
     }
 
     #[turbo_tasks::function]
-    pub async fn is_inside_or_equal(&self, other: Vc<FileSystemPath>) -> Result<Vc<bool>> {
+    pub async fn is_inside_or_equal(&self, other: FileSystemPath) -> Result<Vc<bool>> {
         Ok(Vc::cell(self.is_inside_or_equal_ref(&*other.await?)))
     }
 
-    /// Creates a new [`Vc<FileSystemPath>`] like `self` but with the given
+    /// Creates a new [`FileSystemPath`] like `self` but with the given
     /// extension.
     #[turbo_tasks::function]
-    pub async fn with_extension(&self, extension: RcStr) -> Vc<FileSystemPath> {
+    pub async fn with_extension(&self, extension: RcStr) -> FileSystemPath {
         let (path_without_extension, _) = self.split_extension();
         Self::new_normalized(
             *self.fs,
@@ -1388,7 +1388,7 @@ impl FileSystemPath {
     /// See [`truncate_file_name_with_hash`]. Preserves the input [`Vc`] if no truncation was
     /// performed.
     #[turbo_tasks::function]
-    pub async fn truncate_file_name_with_hash_vc(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    pub async fn truncate_file_name_with_hash_vc(self: Vc<Self>) -> Result<FileSystemPath> {
         Ok(match self.await?.truncate_file_name_with_hash()? {
             Cow::Borrowed(_) => self,
             Cow::Owned(path) => path.cell(),
@@ -1404,10 +1404,10 @@ impl Display for FileSystemPath {
 
 #[turbo_tasks::function]
 pub async fn rebase(
-    fs_path: Vc<FileSystemPath>,
-    old_base: Vc<FileSystemPath>,
-    new_base: Vc<FileSystemPath>,
-) -> Result<Vc<FileSystemPath>> {
+    fs_path: FileSystemPath,
+    old_base: FileSystemPath,
+    new_base: FileSystemPath,
+) -> Result<FileSystemPath> {
     let fs_path = &*fs_path.await?;
     let old_base = &*old_base.await?;
     let new_base = &*new_base.await?;
@@ -1481,15 +1481,15 @@ impl FileSystemPath {
         self.fs().metadata(self)
     }
 
-    pub fn realpath(self: Vc<Self>) -> Vc<FileSystemPath> {
+    pub fn realpath(self: Vc<Self>) -> FileSystemPath {
         self.realpath_with_links().path()
     }
 
     pub fn rebase(
-        fs_path: Vc<FileSystemPath>,
-        old_base: Vc<FileSystemPath>,
-        new_base: Vc<FileSystemPath>,
-    ) -> Vc<FileSystemPath> {
+        fs_path: FileSystemPath,
+        old_base: FileSystemPath,
+        new_base: FileSystemPath,
+    ) -> FileSystemPath {
         rebase(fs_path, old_base, new_base)
     }
 }
@@ -1530,7 +1530,7 @@ impl FileSystemPath {
     }
 
     #[turbo_tasks::function]
-    pub async fn parent(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    pub async fn parent(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let path = &this.path;
         if path.is_empty() {
@@ -1577,7 +1577,7 @@ impl FileSystemPath {
     #[turbo_tasks::function]
     pub async fn realpath_with_links(self: ResolvedVc<Self>) -> Result<Vc<RealPathResult>> {
         let mut current_vc = self;
-        let mut symlinks: IndexSet<ResolvedVc<FileSystemPath>> = IndexSet::new();
+        let mut symlinks: IndexSet<ResolvedFileSystemPath> = IndexSet::new();
         let mut visited: AutoSet<RcStr> = AutoSet::new();
         // Pick some arbitrary symlink depth limit... similar to the ELOOP logic for realpath(3).
         // SYMLOOP_MAX is 40 for Linux: https://unix.stackexchange.com/q/721724
@@ -1670,14 +1670,14 @@ impl ValueToString for FileSystemPath {
 #[derive(Clone, Debug)]
 #[turbo_tasks::value(shared)]
 pub struct RealPathResult {
-    pub path: ResolvedVc<FileSystemPath>,
-    pub symlinks: Vec<ResolvedVc<FileSystemPath>>,
+    pub path: ResolvedFileSystemPath,
+    pub symlinks: Vec<ResolvedFileSystemPath>,
 }
 
 #[turbo_tasks::value_impl]
 impl RealPathResult {
     #[turbo_tasks::function]
-    pub fn path(&self) -> Vc<FileSystemPath> {
+    pub fn path(&self) -> FileSystemPath {
         *self.path
     }
 }
@@ -1830,7 +1830,7 @@ bitflags! {
 pub enum LinkContent {
     // for the relative link, the target is raw value read from the link
     // for the absolute link, the target is stripped of the root path while reading
-    // We don't use the `Vc<FileSystemPath>` here for now, because the `FileSystemPath` is always
+    // We don't use the `FileSystemPath` here for now, because the `FileSystemPath` is always
     // normalized, which means in `fn write_link` we couldn't restore the raw value of the file
     // link because there is only **dist** path in `fn write_link`, and we need the raw path if
     // we want to restore the link value in `fn write_link`
@@ -2296,10 +2296,10 @@ pub enum RawDirectoryEntry {
     Hash, Clone, Copy, Debug, PartialEq, Eq, TraceRawVcs, Serialize, Deserialize, NonLocalValue,
 )]
 pub enum DirectoryEntry {
-    File(ResolvedVc<FileSystemPath>),
-    Directory(ResolvedVc<FileSystemPath>),
-    Symlink(ResolvedVc<FileSystemPath>),
-    Other(ResolvedVc<FileSystemPath>),
+    File(ResolvedFileSystemPath),
+    Directory(ResolvedFileSystemPath),
+    Symlink(ResolvedFileSystemPath),
+    Other(ResolvedFileSystemPath),
     Error,
 }
 
@@ -2419,37 +2419,37 @@ pub struct NullFileSystem;
 #[turbo_tasks::value_impl]
 impl FileSystem for NullFileSystem {
     #[turbo_tasks::function]
-    fn read(&self, _fs_path: Vc<FileSystemPath>) -> Vc<FileContent> {
+    fn read(&self, _fs_path: FileSystemPath) -> Vc<FileContent> {
         FileContent::NotFound.cell()
     }
 
     #[turbo_tasks::function]
-    fn read_link(&self, _fs_path: Vc<FileSystemPath>) -> Vc<LinkContent> {
+    fn read_link(&self, _fs_path: FileSystemPath) -> Vc<LinkContent> {
         LinkContent::NotFound.into()
     }
 
     #[turbo_tasks::function]
-    fn raw_read_dir(&self, _fs_path: Vc<FileSystemPath>) -> Vc<RawDirectoryContent> {
+    fn raw_read_dir(&self, _fs_path: FileSystemPath) -> Vc<RawDirectoryContent> {
         RawDirectoryContent::not_found()
     }
 
     #[turbo_tasks::function]
-    fn track(&self, _fs_path: Vc<FileSystemPath>) -> Vc<Completion> {
+    fn track(&self, _fs_path: FileSystemPath) -> Vc<Completion> {
         Completion::immutable()
     }
 
     #[turbo_tasks::function]
-    fn write(&self, _fs_path: Vc<FileSystemPath>, _content: Vc<FileContent>) -> Vc<()> {
+    fn write(&self, _fs_path: FileSystemPath, _content: Vc<FileContent>) -> Vc<()> {
         Vc::default()
     }
 
     #[turbo_tasks::function]
-    fn write_link(&self, _fs_path: Vc<FileSystemPath>, _target: Vc<LinkContent>) -> Vc<()> {
+    fn write_link(&self, _fs_path: FileSystemPath, _target: Vc<LinkContent>) -> Vc<()> {
         Vc::default()
     }
 
     #[turbo_tasks::function]
-    fn metadata(&self, _fs_path: Vc<FileSystemPath>) -> Vc<FileMeta> {
+    fn metadata(&self, _fs_path: FileSystemPath) -> Vc<FileMeta> {
         FileMeta::default().cell()
     }
 }
@@ -2462,7 +2462,7 @@ impl ValueToString for NullFileSystem {
     }
 }
 
-pub async fn to_sys_path(mut path: Vc<FileSystemPath>) -> Result<Option<PathBuf>> {
+pub async fn to_sys_path(mut path: FileSystemPath) -> Result<Option<PathBuf>> {
     loop {
         if let Some(fs) = Vc::try_resolve_downcast_type::<AttachedFileSystem>(path.fs()).await? {
             path = fs.get_inner_fs_path(path);

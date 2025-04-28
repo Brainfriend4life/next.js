@@ -26,7 +26,7 @@ impl TracedAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for TracedAsset {
     #[turbo_tasks::function]
-    fn path(&self) -> Vc<FileSystemPath> {
+    fn path(&self) -> FileSystemPath {
         self.module.ident().path()
     }
 

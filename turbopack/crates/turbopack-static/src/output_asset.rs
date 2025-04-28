@@ -30,7 +30,7 @@ impl StaticOutputAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for StaticOutputAsset {
     #[turbo_tasks::function]
-    async fn path(&self) -> Result<Vc<FileSystemPath>> {
+    async fn path(&self) -> Result<FileSystemPath> {
         let content = self.source.content();
         let content_hash = if let AssetContent::File(file) = &*content.await? {
             if let FileContent::Content(file) = &*file.await? {

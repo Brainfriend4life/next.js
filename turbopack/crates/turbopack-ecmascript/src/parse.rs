@@ -243,7 +243,7 @@ async fn parse_internal(
 
 async fn parse_file_content(
     string: String,
-    fs_path_vc: Vc<FileSystemPath>,
+    fs_path_vc: FileSystemPath,
     fs_path: &FileSystemPath,
     ident: &str,
     query: RcStr,
@@ -478,7 +478,7 @@ struct ReadSourceIssue {
 #[turbo_tasks::value_impl]
 impl Issue for ReadSourceIssue {
     #[turbo_tasks::function]
-    fn file_path(&self) -> Vc<FileSystemPath> {
+    fn file_path(&self) -> FileSystemPath {
         self.source.ident().path()
     }
 

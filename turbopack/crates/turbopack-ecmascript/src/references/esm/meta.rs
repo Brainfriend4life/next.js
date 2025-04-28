@@ -27,11 +27,11 @@ use crate::{
 /// This singleton behavior must be enforced by the caller!
 #[derive(PartialEq, Eq, Serialize, Deserialize, TraceRawVcs, ValueDebugFormat, NonLocalValue)]
 pub struct ImportMetaBinding {
-    path: ResolvedVc<FileSystemPath>,
+    path: ResolvedFileSystemPath,
 }
 
 impl ImportMetaBinding {
-    pub fn new(path: ResolvedVc<FileSystemPath>) -> Self {
+    pub fn new(path: ResolvedFileSystemPath) -> Self {
         ImportMetaBinding { path }
     }
 

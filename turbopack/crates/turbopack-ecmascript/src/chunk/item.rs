@@ -26,7 +26,7 @@ pub struct EcmascriptChunkItemContent {
     pub inner_code: Rope,
     pub source_map: Option<Rope>,
     pub options: EcmascriptChunkItemOptions,
-    pub rewrite_source_path: Option<ResolvedVc<FileSystemPath>>,
+    pub rewrite_source_path: Option<ResolvedFileSystemPath>,
     pub placeholder_for_future_extensions: (),
 }
 

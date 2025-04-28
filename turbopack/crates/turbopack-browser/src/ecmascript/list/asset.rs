@@ -91,7 +91,7 @@ fn chunk_key() -> Vc<RcStr> {
 #[turbo_tasks::value_impl]
 impl OutputAsset for EcmascriptDevChunkList {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
+    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
         let this = self.await?;
         let mut ident = this.ident.owned().await?;
         ident.add_modifier(modifier().to_resolved().await?);
