@@ -10,6 +10,7 @@ use std::{
 };
 
 use debug_unreachable::debug_unreachable;
+use scoped_tls::scoped_thread_local;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use shrink_to_fit::ShrinkToFit;
 use triomphe::Arc;
@@ -279,6 +280,18 @@ impl Hash for RcStr {
         self.as_str().hash(state);
     }
 }
+
+scoped_thread_local!(
+    /// Map of strings to their interned ids.
+    ///
+    /// This is used to serialize strings to their interned ids.
+    static SER_MAP: RefCell<FxHashMap<RcStr, u64>>
+);
+
+scoped_thread_local!(
+    /// Read-only map of strings to their interned ids
+    static DE_MAP: FxHashMap<RcStr, u64>
+);
 
 impl Serialize for RcStr {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
