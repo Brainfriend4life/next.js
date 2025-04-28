@@ -332,10 +332,12 @@ impl Serialize for RcStr {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         if SER_MAP.is_set() && self.len() >= 3 && (self.len() < 512 || self.ref_count() >= 2) {
             return SER_MAP.with(|ser| {
-                if let Some(id) = ser.borrow().get_index_of(self) {
+                let mut borrow = ser.borrow_mut();
+                if let Some(id) = borrow.get_index_of(self) {
                     serializer.serialize_u32(id as u32)
                 } else {
-                    let id = ser.borrow_mut().insert(self.clone());
+                    let id = borrow.len();
+                    borrow.insert(self.clone());
                     serializer.serialize_u32(id as u32)
                 }
             });
