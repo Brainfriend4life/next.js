@@ -15,6 +15,7 @@ serde = { workspace = true }
 new_debug_unreachable = "1.0.6"
 shrink-to-fit = { workspace = true }
 scoped-tls = "1.0.1"
+rustc-hash = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
