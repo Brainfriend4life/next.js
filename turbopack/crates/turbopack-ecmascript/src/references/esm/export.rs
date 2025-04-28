@@ -569,7 +569,7 @@ impl EsmExports {
         for (exported, local) in &expanded.exports {
             if remove_unused_exports {
                 let info = get_module_export_usages(module_graph, module).await?;
-                if !info.is_export_used(exported.clone()).await? {
+                if !info.is_export_used(exported.clone()) {
                     continue;
                 }
             }

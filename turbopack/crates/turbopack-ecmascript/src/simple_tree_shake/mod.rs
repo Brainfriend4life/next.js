@@ -96,8 +96,8 @@ pub struct ModuleExportUsageInfo {
 }
 
 impl ModuleExportUsageInfo {
-    pub async fn is_export_used(&self, export_name: RcStr) -> Result<bool> {
-        Ok(self.exports.contains(&ExportUsage::All)
-            || self.exports.contains(&ExportUsage::Named(export_name)))
+    pub fn is_export_used(&self, export_name: RcStr) -> bool {
+        self.exports.contains(&ExportUsage::All)
+            || self.exports.contains(&ExportUsage::Named(export_name))
     }
 }
