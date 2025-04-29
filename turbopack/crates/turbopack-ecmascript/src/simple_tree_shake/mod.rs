@@ -1,12 +1,12 @@
 //! Intermediate tree shaking that uses global information but not good as the full tree shaking.
 
 use anyhow::{bail, Context, Result};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use turbo_rcstr::RcStr;
 use turbo_tasks::{ResolvedVc, ValueToString, Vc};
 use turbopack_core::{module::Module, module_graph::ModuleGraph, resolve::ExportUsage};
 
-use crate::chunk::EcmascriptChunkPlaceable;
+use crate::{chunk::EcmascriptChunkPlaceable, EcmascriptModuleAsset};
 
 #[turbo_tasks::function]
 pub async fn get_module_export_usages(
@@ -16,6 +16,12 @@ pub async fn get_module_export_usages(
     let export_usage_info = compute_export_usage_info(graph)
         .resolve_strongly_consistent()
         .await?;
+
+    // Module types other than EcmascriptModuleAsset includes entrypoints to the module graph like
+    // next.js page files or layout files, so exclude them.
+    let Some(_) = ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(module) else {
+        return Ok(ModuleExportUsageInfo::all());
+    };
 
     let export_usage_info = export_usage_info.await?;
 
@@ -73,5 +79,16 @@ impl ModuleExportUsageInfo {
     pub fn is_export_used(&self, export_name: RcStr) -> bool {
         self.exports.contains(&ExportUsage::All)
             || self.exports.contains(&ExportUsage::Named(export_name))
+    }
+}
+
+#[turbo_tasks::value_impl]
+impl ModuleExportUsageInfo {
+    #[turbo_tasks::function]
+    pub fn all() -> Vc<Self> {
+        let mut exports = FxHashSet::with_capacity_and_hasher(1, FxBuildHasher);
+        exports.insert(ExportUsage::All);
+
+        Self { exports }.cell()
     }
 }
