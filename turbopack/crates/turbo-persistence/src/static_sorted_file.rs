@@ -268,7 +268,7 @@ impl StaticSortedFile {
         } else {
             let aqmf = self.aqmf.get_or_try_init(|| {
                 let aqmf = &self.mmap[header.aqmf.start..header.aqmf.end];
-                anyhow::Ok(interning_serde::from_slice(&Default::default(), aqmf)?)
+                anyhow::Ok(pot::from_slice(aqmf)?)
             })?;
             if !aqmf.contains_fingerprint(key_hash) {
                 return Ok(LookupResult::QuickFilterMiss);
