@@ -5,19 +5,19 @@ import { parse as parseStackTrace } from '../compiled/stacktrace-parser'
 import { getProperError } from './error'
 
 type StructuredError = {
-  name: string;
-  message: string;
-  stack: StackFrame[];
+  name: string
+  message: string
+  stack: StackFrame[]
   cause: StructuredError | undefined
 }
 
-export function structuredError(e: Error|string): StructuredError {
-  e = getProperError(e);
+export function structuredError(e: Error | string): StructuredError {
+  e = getProperError(e)
 
   return {
     name: e.name,
     message: e.message,
-    stack: typeof e.stack === "string" ? parseStackTrace(e.stack) : [],
+    stack: typeof e.stack === 'string' ? parseStackTrace(e.stack) : [],
     cause: e.cause ? structuredError(getProperError(e.cause)) : undefined,
   }
 }
@@ -32,11 +32,11 @@ type State =
     }
 
 export type Ipc<TIncoming, TOutgoing> = {
-  recv(): Promise<TIncoming>;
-  send(message: TOutgoing): Promise<void>;
-  sendError(error: Error|string): Promise<never>;
-  sendReady(): Promise<void>;
-};
+  recv(): Promise<TIncoming>
+  send(message: TOutgoing): Promise<void>
+  sendError(error: Error | string): Promise<never>
+  sendReady(): Promise<void>
+}
 
 function createIpc<TIncoming, TOutgoing>(
   port: number
@@ -139,9 +139,8 @@ function createIpc<TIncoming, TOutgoing>(
   }
 
   function send(message: any): Promise<void> {
-    return doSend(JSON.stringify(message));
-   }
-
+    return doSend(JSON.stringify(message))
+  }
 
   return {
     async recv() {
@@ -161,11 +160,11 @@ function createIpc<TIncoming, TOutgoing>(
 
     send,
 
-    sendReady(){
-      return doSend("");
+    sendReady() {
+      return doSend('')
     },
 
-    async sendError(error: Error|string): Promise<never> {
+    async sendError(error: Error | string): Promise<never> {
       try {
         await send({
           type: 'error',

@@ -2,14 +2,9 @@ declare const __turbopack_external_require__: {
   resolve: (name: string, opt: { paths: string[] }) => string
 } & ((id: string, thunk: () => any, esm?: boolean) => any)
 
-import type { Ipc, IpcResolveOptions} from "../ipc/evaluate";
-import {
-  dirname,
-  resolve as pathResolve,
-} from 'path'
-import {
-  parse as parseStackTrace,
-} from "../compiled/stacktrace-parser";
+import type { Ipc, IpcResolveOptions } from '../ipc/evaluate'
+import { dirname, resolve as pathResolve } from 'path'
+import { parse as parseStackTrace } from '../compiled/stacktrace-parser'
 
 export type IpcRequestMessage = {
   type: 'resolve'
@@ -29,8 +24,7 @@ const {
   runLoaders,
 }: typeof import('loader-runner') = require('@vercel/turbopack/loader-runner')
 
-const contextDir = process.cwd();
-
+const contextDir = process.cwd()
 
 const LogType = Object.freeze({
   error: 'error',
@@ -116,7 +110,6 @@ type ResolveOptions = {
   roots?: string[]
   importFields?: string[]
 }
-
 
 const transform = (
   ipc: Ipc,
@@ -249,8 +242,8 @@ const transform = (
               request: string,
               callback?: (err?: Error, result?: string) => void
             ) => {
-              const promise = ipc.resolve(lookupPath, request, rustOptions);
-                
+              const promise = ipc.resolve(lookupPath, request, rustOptions)
+
               if (callback) {
                 promise
                   .then(
@@ -286,14 +279,10 @@ const transform = (
                   // TODO: do we need to handle this?
                   break
               }
-              ipc.sendLog(
-                logType,
-                args,
-                trace,
-              );
-            };
-            let timers: Map<string, [number, number]> | undefined;
-            let timersAggregates: Map<string, [number, number]> | undefined;
+              ipc.sendLog(logType, args, trace)
+            }
+            let timers: Map<string, [number, number]> | undefined
+            let timersAggregates: Map<string, [number, number]> | undefined
 
             // See https://github.com/webpack/webpack/blob/a48c34b34d2d6c44f9b2b221d7baf278d34ac0be/lib/logging/Logger.js#L8
             return {
@@ -394,10 +383,7 @@ const transform = (
       (err, result) => {
         ipc.sendDependencyInformation({
           filePaths: result.fileDependencies,
-          directories: result.contextDependencies.map((dep) => [
-            dep,
-            '**',
-          ]),
+          directories: result.contextDependencies.map((dep) => [dep, '**']),
         })
         if (err) return reject(err)
         if (!result.result) return reject(new Error('No result from loaders'))
@@ -420,11 +406,8 @@ const transform = (
 
 export { transform as default }
 
-function makeErrorEmitter(
-  severity: "warning" | "error",
-  ipc: Ipc
-) {
+function makeErrorEmitter(severity: 'warning' | 'error', ipc: Ipc) {
   return (error: Error | string) => {
-    ipc.sendEmittedError(severity, error);
-  };
+    ipc.sendEmittedError(severity, error)
+  }
 }

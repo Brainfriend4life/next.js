@@ -9,16 +9,15 @@ import type { Processor } from 'postcss'
 // @ts-ignore
 import postcss from '@vercel/turbopack/postcss'
 // @ts-ignore
-import importedConfig from "CONFIG";
-import type { Ipc } from "../ipc/evaluate";
-
+import importedConfig from 'CONFIG'
+import type { Ipc } from '../ipc/evaluate'
 
 let processor: Processor | undefined
 
 export const init = async (ipc: Ipc) => {
-  let config = importedConfig;
-  if (typeof config === "function") {
-    config = await config({ env: "development" });
+  let config = importedConfig
+  if (typeof config === 'function') {
+    config = await config({ env: 'development' })
   }
   if (typeof config === 'undefined') {
     throw new Error(
@@ -96,21 +95,21 @@ export default async function transform(
               ? msg.sourceMap
               : JSON.stringify(msg.sourceMap),
           // There is also an info field, which we currently ignore
-        });
-        break;
-      case "dependency":
-      case "missing-dependency":
-        filePaths.push(msg.file);
-        break;
-      case "build-dependency":
-        buildFilePaths.push(msg.file);
-        break;
-      case "dir-dependency":
-        directories.push([msg.dir, msg.glob]);
-        break;
-      case "context-dependency":
-        directories.push([msg.dir, "**"]);
-        break;
+        })
+        break
+      case 'dependency':
+      case 'missing-dependency':
+        filePaths.push(msg.file)
+        break
+      case 'build-dependency':
+        buildFilePaths.push(msg.file)
+        break
+      case 'dir-dependency':
+        directories.push([msg.dir, msg.glob])
+        break
+      case 'context-dependency':
+        directories.push([msg.dir, '**'])
+        break
       default:
         // TODO: do we need to do anything here?
         break
