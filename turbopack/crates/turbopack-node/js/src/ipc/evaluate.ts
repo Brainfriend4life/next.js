@@ -209,8 +209,12 @@ export const run = async (
 
   const flushInfos = () => {
     let promises = []
-    promises.push(sendInfo({ type: 'log', logs }))
-    promises.push(sendInfo(dependencyInfo))
+    if (logs.length) {
+      promises.push(sendInfo({ type: 'log', logs }))
+    }
+    if (dependencyInfo) {
+      promises.push(sendInfo(dependencyInfo))
+    }
     logs.length = 0
     dependencyInfo = undefined
     return Promise.all(promises)
