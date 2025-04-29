@@ -9,29 +9,16 @@ import type { Processor } from 'postcss'
 // @ts-ignore
 import postcss from '@vercel/turbopack/postcss'
 // @ts-ignore
-import importedConfig from 'CONFIG'
-import { relative, isAbsolute, sep } from 'path'
-import type { Ipc } from '../ipc/evaluate'
-import type { IpcInfoMessage, IpcRequestMessage } from './webpack-loaders'
+import importedConfig from "CONFIG";
+import type { Ipc } from "../ipc/evaluate";
 
-const contextDir = process.cwd()
-
-function toPath(file: string) {
-  const relPath = relative(contextDir, file)
-  if (isAbsolute(relPath)) {
-    throw new Error(
-      `Cannot depend on path (${file}) outside of root directory (${contextDir})`
-    )
-  }
-  return sep !== '/' ? relPath.replaceAll(sep, '/') : relPath
-}
 
 let processor: Processor | undefined
 
-export const init = async (ipc: Ipc<IpcInfoMessage, IpcRequestMessage>) => {
-  let config = importedConfig
-  if (typeof config === 'function') {
-    config = await config({ env: 'development' })
+export const init = async (ipc: Ipc) => {
+  let config = importedConfig;
+  if (typeof config === "function") {
+    config = await config({ env: "development" });
   }
   if (typeof config === 'undefined') {
     throw new Error(
@@ -76,7 +63,7 @@ export const init = async (ipc: Ipc<IpcInfoMessage, IpcRequestMessage>) => {
 }
 
 export default async function transform(
-  ipc: Ipc<IpcInfoMessage, IpcRequestMessage>,
+  ipc: Ipc,
   cssContent: string,
   name: string,
   sourceMap: boolean
@@ -109,28 +96,27 @@ export default async function transform(
               ? msg.sourceMap
               : JSON.stringify(msg.sourceMap),
           // There is also an info field, which we currently ignore
-        })
-        break
-      case 'dependency':
-      case 'missing-dependency':
-        filePaths.push(toPath(msg.file))
-        break
-      case 'build-dependency':
-        buildFilePaths.push(toPath(msg.file))
-        break
-      case 'dir-dependency':
-        directories.push([toPath(msg.dir), msg.glob])
-        break
-      case 'context-dependency':
-        directories.push([toPath(msg.dir), '**'])
-        break
+        });
+        break;
+      case "dependency":
+      case "missing-dependency":
+        filePaths.push(msg.file);
+        break;
+      case "build-dependency":
+        buildFilePaths.push(msg.file);
+        break;
+      case "dir-dependency":
+        directories.push([msg.dir, msg.glob]);
+        break;
+      case "context-dependency":
+        directories.push([msg.dir, "**"]);
+        break;
       default:
         // TODO: do we need to do anything here?
         break
     }
   }
-  ipc.sendInfo({
-    type: 'dependencies',
+  ipc.sendDependencyInformation({
     filePaths,
     directories,
     buildFilePaths,

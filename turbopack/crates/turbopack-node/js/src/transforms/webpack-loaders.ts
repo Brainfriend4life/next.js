@@ -2,41 +2,14 @@ declare const __turbopack_external_require__: {
   resolve: (name: string, opt: { paths: string[] }) => string
 } & ((id: string, thunk: () => any, esm?: boolean) => any)
 
-import type { Ipc } from '../ipc/evaluate'
+import type { Ipc, IpcResolveOptions} from "../ipc/evaluate";
 import {
-  relative,
-  isAbsolute,
-  join,
-  sep,
   dirname,
   resolve as pathResolve,
 } from 'path'
 import {
-  StackFrame,
   parse as parseStackTrace,
-} from '../compiled/stacktrace-parser'
-import { type StructuredError } from 'src/ipc'
-
-export type IpcInfoMessage =
-  | {
-      type: 'dependencies'
-      envVariables?: string[]
-      directories?: Array<[string, string]>
-      filePaths?: string[]
-      buildFilePaths?: string[]
-    }
-  | {
-      type: 'emittedError'
-      severity: 'warning' | 'error'
-      error: StructuredError
-    }
-  | {
-      type: 'log'
-      time: number
-      logType: string
-      args: any[]
-      trace?: StackFrame[]
-    }
+} from "../compiled/stacktrace-parser";
 
 export type IpcRequestMessage = {
   type: 'resolve'
@@ -56,19 +29,8 @@ const {
   runLoaders,
 }: typeof import('loader-runner') = require('@vercel/turbopack/loader-runner')
 
-const contextDir = process.cwd()
-const toPath = (file: string) => {
-  const relPath = relative(contextDir, file)
-  if (isAbsolute(relPath)) {
-    throw new Error(
-      `Cannot depend on path (${file}) outside of root directory (${contextDir})`
-    )
-  }
-  return sep !== '/' ? relPath.replaceAll(sep, '/') : relPath
-}
-const fromPath = (path: string) => {
-  return join(contextDir, sep !== '/' ? path.replaceAll('/', sep) : path)
-}
+const contextDir = process.cwd();
+
 
 const LogType = Object.freeze({
   error: 'error',
@@ -155,24 +117,9 @@ type ResolveOptions = {
   importFields?: string[]
 }
 
-// Patch process.env to track which env vars are read
-const originalEnv = process.env
-const readEnvVars = new Set<string>()
-process.env = new Proxy(originalEnv, {
-  get(target, prop) {
-    if (typeof prop === 'string' && !readEnvVars.has(prop)) {
-      // We register the env var as dependency on the
-      // current transform and all future transforms
-      // since the env var might be cached in module scope
-      // and influence them all
-      readEnvVars.add(prop)
-    }
-    return Reflect.get(target, prop)
-  },
-})
 
 const transform = (
-  ipc: Ipc<IpcInfoMessage, IpcRequestMessage>,
+  ipc: Ipc,
   content: string | { binary: string },
   name: string,
   query: string,
@@ -206,14 +153,14 @@ const transform = (
               : {}
           },
           getResolve: (options: ResolveOptions) => {
-            const rustOptions = {
-              aliasFields: undefined as undefined | string[],
-              conditionNames: undefined as undefined | string[],
+            const rustOptions: IpcResolveOptions = {
+              aliasFields: undefined,
+              conditionNames: undefined,
               noPackageJson: false,
-              extensions: undefined as undefined | string[],
-              mainFields: undefined as undefined | string[],
+              extensions: undefined,
+              mainFields: undefined,
               noExportsField: false,
-              mainFiles: undefined as undefined | string[],
+              mainFiles: undefined,
               noModules: false,
               preferRelative: false,
             }
@@ -302,23 +249,8 @@ const transform = (
               request: string,
               callback?: (err?: Error, result?: string) => void
             ) => {
-              const promise = ipc
-                .sendRequest({
-                  type: 'resolve',
-                  options: rustOptions,
-                  lookupPath: toPath(lookupPath),
-                  request,
-                })
-                .then((unknownResult) => {
-                  let result = unknownResult as { path: string }
-                  if (result && typeof result.path === 'string') {
-                    return fromPath(result.path)
-                  } else {
-                    throw Error(
-                      'Expected { path: string } from resolve request'
-                    )
-                  }
-                })
+              const promise = ipc.resolve(lookupPath, request, rustOptions);
+                
               if (callback) {
                 promise
                   .then(
@@ -354,18 +286,14 @@ const transform = (
                   // TODO: do we need to handle this?
                   break
               }
-              // TODO(lukesandberg): should we batch these and flush lazily?
-              // turbopack just collects these and reports them when finishing the task.
-              ipc.sendInfo({
-                type: 'log',
-                time: Date.now(),
+              ipc.sendLog(
                 logType,
                 args,
                 trace,
-              })
-            }
-            let timers: Map<string, [number, number]> | undefined
-            let timersAggregates: Map<string, [number, number]> | undefined
+              );
+            };
+            let timers: Map<string, [number, number]> | undefined;
+            let timersAggregates: Map<string, [number, number]> | undefined;
 
             // See https://github.com/webpack/webpack/blob/a48c34b34d2d6c44f9b2b221d7baf278d34ac0be/lib/logging/Logger.js#L8
             return {
@@ -464,12 +392,10 @@ const transform = (
         },
       },
       (err, result) => {
-        ipc.sendInfo({
-          type: 'dependencies',
-          envVariables: Array.from(readEnvVars),
-          filePaths: result.fileDependencies.map(toPath),
+        ipc.sendDependencyInformation({
+          filePaths: result.fileDependencies,
           directories: result.contextDependencies.map((dep) => [
-            toPath(dep),
+            dep,
             '**',
           ]),
         })
@@ -495,27 +421,10 @@ const transform = (
 export { transform as default }
 
 function makeErrorEmitter(
-  severity: 'warning' | 'error',
-  ipc: Ipc<IpcInfoMessage, IpcRequestMessage>
+  severity: "warning" | "error",
+  ipc: Ipc
 ) {
-  return function (error: Error | string) {
-    ipc.sendInfo({
-      type: 'emittedError',
-      severity: severity,
-      error:
-        error instanceof Error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack ? parseStackTrace(error.stack) : [],
-              cause: undefined,
-            }
-          : {
-              name: 'Error',
-              message: error,
-              stack: [],
-              cause: undefined,
-            },
-    })
-  }
+  return (error: Error | string) => {
+    ipc.sendEmittedError(severity, error);
+  };
 }
