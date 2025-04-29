@@ -1941,6 +1941,7 @@ async fn handle_call<G: Fn(Vec<Effect>) + Send + Sync>(
         JsValue::WellKnownFunction(WellKnownFunctionKind::PathJoin) => {
             let context_path = source.ident().path().await?;
             // ignore path.join in `node-gyp`, it will includes too many files
+            // ignore path.join in the turbopack-node ipc system.
             if context_path.path.contains("node_modules/node-gyp")
                 || context_path.path.contains("ipc/evaluate.ts")
             {
