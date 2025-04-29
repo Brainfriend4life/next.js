@@ -1,19 +1,5 @@
-it('runs sync tests', () => {
-  expect(true).toBe(true)
-})
+import './other.js'
 
-it('runs async tests', async () => {
-  await Promise.resolve()
-  expect(true).toBe(true)
-})
+console.log('3 index')
 
-describe('nested describe', () => {
-  it('runs sync tests', () => {
-    expect(true).toBe(true)
-  })
-
-  it('runs async tests', async () => {
-    await Promise.resolve()
-    expect(true).toBe(true)
-  })
-})
+it('works', () => {})
