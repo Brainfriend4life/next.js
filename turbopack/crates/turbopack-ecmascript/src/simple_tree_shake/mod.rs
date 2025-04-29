@@ -3,8 +3,9 @@
 use anyhow::{bail, Context, Result};
 use rustc_hash::{FxHashMap, FxHashSet};
 use turbo_rcstr::RcStr;
-use turbo_tasks::{ResolvedVc, TryJoinIterExt, Vc};
+use turbo_tasks::{ResolvedVc, TryJoinIterExt, ValueToString, Vc};
 use turbopack_core::{
+    module::Module,
     module_graph::{ModuleGraph, SingleModuleGraph},
     resolve::ExportUsage,
 };
@@ -24,7 +25,9 @@ pub async fn get_module_export_usages(
 
     let Some(exports) = export_usage_info.used_exports.get(&module) else {
         bail!(
-            "module not found in export usage info. Something is wrong with the export usage info."
+            "module {} not found in export usage info. Something is wrong with the export usage \
+             info.",
+            module.ident().to_string().await?
         );
     };
 
