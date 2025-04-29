@@ -256,8 +256,7 @@ impl StaticSortedFile {
                 GuardResult::Value(aqmf) => aqmf,
                 GuardResult::Guard(guard) => {
                     let aqmf = &self.mmap[header.aqmf.start..header.aqmf.end];
-                    let aqmf: Arc<qfilter::Filter> =
-                        Arc::new(interning_serde::from_slice(&Default::default(), aqmf)?);
+                    let aqmf: Arc<qfilter::Filter> = Arc::new(pot::from_slice(aqmf)?);
                     let _ = guard.insert(aqmf.clone());
                     aqmf
                 }
