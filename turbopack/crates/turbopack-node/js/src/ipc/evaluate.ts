@@ -110,7 +110,7 @@ export const run = async (
   let nextId = 1;
   const requests = new Map();
   // Defer sending these until the end of the task to improve efficiency.
-  const logs: Array<{type:"log", time:number, logType:string, args:unknown[], trace?: StackFrame[]}> = [];
+  const logs: Array<{time:number, logType:string, args:unknown[], trace?: StackFrame[]}> = [];
   let dependencyInfo:{
     type: 'dependencies'
     envVariables?: string[]
@@ -139,7 +139,7 @@ export const run = async (
       };
     },
     sendLog(logType: string, args:unknown[], trace?: StackFrame[]): void {
-      logs.push({type:"log", time: Date.now(), logType, args, trace});
+      logs.push({time: Date.now(), logType, args, trace});
     },
     sendEmittedError(severity: "warning" | "error", error: string | Error): Promise<void> {
       return sendInfo({type:"emittedError", severity, error: structuredError(error)});
@@ -182,8 +182,8 @@ export const run = async (
 
   const flushInfos = () => {
     let promises = [];
-    promises.push(ipc.send({type: "info", data: logs}));
-    promises.push(ipc.send({type:"info", data: dependencyInfo}))
+    promises.push(sendInfo({type:"log", logs}));
+    promises.push(sendInfo(dependencyInfo));
     logs.length = 0;
     dependencyInfo = undefined;
     return Promise.all(promises);
