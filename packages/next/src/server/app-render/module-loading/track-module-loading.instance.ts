@@ -54,8 +54,3 @@ export function trackPendingModules(cacheSignal: CacheSignal) {
   const unsubscribe = moduleLoadingSignal.subscribeToReads(cacheSignal)
   cacheSignal.cacheReady().then(unsubscribe)
 }
-
-/** Wait for currently pending imports and chunk loads to finish. */
-export async function waitForPendingModules() {
-  await moduleLoadingSignal.cacheReady()
-}
