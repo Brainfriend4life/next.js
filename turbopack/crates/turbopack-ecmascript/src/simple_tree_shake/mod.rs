@@ -17,11 +17,12 @@ pub async fn get_module_export_usages(
         .resolve_strongly_consistent()
         .await?;
 
-    // Module types other than EcmascriptModuleAsset includes entrypoints to the module graph like
-    // next.js page files or layout files, so exclude them.
-    let Some(_) = ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(module) else {
-        return Ok(ModuleExportUsageInfo::all());
-    };
+    // We exclude template files from tree shaking because they are entrypoints to the module graph.
+    if let Some(module) = ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(module) {
+        if module.await?.inner_assets.is_some() {
+            return Ok(ModuleExportUsageInfo::all());
+        }
+    }
 
     let export_usage_info = export_usage_info.await?;
 
