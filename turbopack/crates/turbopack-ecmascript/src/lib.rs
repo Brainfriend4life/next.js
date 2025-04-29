@@ -311,12 +311,42 @@ pub trait EcmascriptAnalyzable: Module + Asset {
         module_graph: Vc<ModuleGraph>,
         chunking_context: Vc<Box<dyn ChunkingContext>>,
         async_module_info: Option<Vc<AsyncModuleInfo>>,
-    ) -> Vc<EcmascriptModuleContent> {
-        EcmascriptModuleContent::new(self.module_content_options(
-            module_graph,
-            chunking_context,
-            async_module_info,
-        ))
+    ) -> Result<Vc<EcmascriptModuleContent>> {
+        println!(
+            "additional {:?} {:?}",
+            self.ident().to_string().await?,
+            module_graph
+                .module_sequences()
+                .additional_modules_for_entry(Vc::upcast(self))
+                .await?
+                .iter()
+                .map(|m| m.ident().to_string())
+                .try_join()
+                .await?,
+        );
+
+        let own_options =
+            self.module_content_options(module_graph, chunking_context, async_module_info);
+        let additional_modules = module_graph
+            .module_sequences()
+            .additional_modules_for_entry(Vc::upcast(self))
+            .await?;
+
+        if additional_modules.is_empty() {
+            Ok(EcmascriptModuleContent::new(own_options))
+        } else {
+            let additional_options = additional_modules.iter().map(|m| {
+                let Some(m) = ResolvedVc::try_downcast::<Box<dyn EcmascriptAnalyzable>>(*m) else {
+                    panic!("Expected EcmascriptAnalyzable in scope hoisting group");
+                };
+                m.module_content_options(module_graph, chunking_context, async_module_info)
+            });
+
+            let options = std::iter::once(own_options)
+                .chain(additional_options)
+                .collect();
+            Ok(EcmascriptModuleContent::new_merged(options))
+        }
     }
 }
 
@@ -948,6 +978,66 @@ impl EcmascriptModuleContent {
             OptionStringifiedSourceMap::none().to_resolved().await?,
         )
         .await?;
+        emit_content(content).await
+    }
+
+    /// Creates a new [`Vc<EcmascriptModuleContent>`] from multiple modules, performing scope
+    /// hoisting.
+    #[turbo_tasks::function]
+    pub async fn new_merged(options: Vec<Vc<EcmascriptModuleContentOptions>>) -> Result<Vc<Self>> {
+        let contents = options
+            .iter()
+            .map(async |options| {
+                let options = options.await?;
+                let EcmascriptModuleContentOptions {
+                    parsed,
+                    ident,
+                    specified_module_type,
+                    generate_source_map,
+                    original_source_map,
+                    ..
+                } = &*options;
+                // TODO correctly handle group-internal exports and imports here
+                let code_gens = options.merged_code_gens().await?;
+                process_parse_result(
+                    *parsed,
+                    **ident,
+                    *specified_module_type,
+                    code_gens,
+                    *generate_source_map,
+                    *original_source_map,
+                )
+                .await
+            })
+            .try_join()
+            .await?;
+
+        let merged_ast = Program::Module(swc_core::ecma::ast::Module {
+            span: DUMMY_SP,
+            shebang: None,
+            body: contents
+                .into_iter()
+                .flat_map(|content| {
+                    if let CodeGenResult {
+                        program: Program::Module(module),
+                        ..
+                    } = content
+                    {
+                        module.body.clone()
+                    } else {
+                        unreachable!()
+                    }
+                })
+                .collect(),
+        });
+        let content = CodeGenResult {
+            program: merged_ast,
+            source_map: Arc::new(SourceMap::default()),
+            comments: Either::Left(Default::default()),
+            is_esm: true,
+            generate_source_map: false,
+            original_source_map: None,
+        };
         emit_content(content).await
     }
 }
