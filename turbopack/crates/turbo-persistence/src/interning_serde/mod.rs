@@ -1,11 +1,15 @@
 //! Exposed for usage in `turbo-tasks-backend`
 
-use std::io::Write;
+use std::{io::Write, sync::LazyLock};
 
+use dashmap::DashMap;
 use indexmap::IndexSet;
 use rustc_hash::FxBuildHasher;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use turbo_rcstr::RcStr;
+
+static GLOBAL_INTERN_MAP: LazyLock<DashMap<RcStr, u32>> = LazyLock::new(DashMap::new);
+static GLOBAL_INTERN_MAP_REVERSE: LazyLock<DashMap<u32, RcStr>> = LazyLock::new(DashMap::new);
 
 #[derive(Serialize, Deserialize)]
 struct Data(Vec<u8>, IndexSet<RcStr, FxBuildHasher>);
