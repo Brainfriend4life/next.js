@@ -1,12 +1,12 @@
 //! Intermediate tree shaking that uses global information but not good as the full tree shaking.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use turbo_rcstr::RcStr;
-use turbo_tasks::{ResolvedVc, ValueToString, Vc};
-use turbopack_core::{module::Module, module_graph::ModuleGraph, resolve::ExportUsage};
+use turbo_tasks::{ResolvedVc, Vc};
+use turbopack_core::{module_graph::ModuleGraph, resolve::ExportUsage};
 
-use crate::{chunk::EcmascriptChunkPlaceable, EcmascriptModuleAsset};
+use crate::chunk::EcmascriptChunkPlaceable;
 
 #[turbo_tasks::function]
 pub async fn get_module_export_usages(
@@ -17,21 +17,12 @@ pub async fn get_module_export_usages(
         .resolve_strongly_consistent()
         .await?;
 
-    // We exclude template files from tree shaking because they are entrypoints to the module graph.
-    if let Some(module) = ResolvedVc::try_downcast_type::<EcmascriptModuleAsset>(module) {
-        if module.await?.inner_assets.is_some() {
-            return Ok(ModuleExportUsageInfo::all());
-        }
-    }
-
     let export_usage_info = export_usage_info.await?;
 
     let Some(exports) = export_usage_info.used_exports.get(&module) else {
-        bail!(
-            "module {} not found in export usage info. Something is wrong with the export usage \
-             info.",
-            module.ident().to_string().await?
-        );
+        // We exclude template files from tree shaking because they are entrypoints to the module
+        // graph.
+        return Ok(ModuleExportUsageInfo::all());
     };
 
     Ok(ModuleExportUsageInfo {
