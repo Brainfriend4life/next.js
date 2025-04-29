@@ -16,7 +16,6 @@ use rustc_hash::FxHasher;
 
 use crate::{
     arc_slice::ArcSlice,
-    interning_serde,
     lookup_entry::{LookupEntry, LookupValue},
     QueryKey,
 };
