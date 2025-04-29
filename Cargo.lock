@@ -9317,6 +9317,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder",
+ "dashmap 6.1.0",
  "indexmap 2.7.1",
  "jiff",
  "lzzzz",
