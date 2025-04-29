@@ -121,7 +121,7 @@ function createIpc<TIncoming, TOutgoing>(
 
   // TODO(lukesandberg): some of the messages being sent are very large and contain lots
   //  of redundant information.  Consider adding gzip compression to our stream.
-  function doSend(message: any): Promise<void> {
+  function doSend(message: string): Promise<void> {
     return new Promise((resolve, reject) => {
       // Reserve 4 bytes for our length prefix, we will over-write after encoding.
       const packet = Buffer.from('0000' + message, 'utf8')

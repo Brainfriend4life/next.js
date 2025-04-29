@@ -110,7 +110,7 @@ export const run = async (
   let nextId = 1;
   const requests = new Map();
   // Defer sending these until the end of the task to improve efficiency.
-  const logs = [];
+  const logs: Array<{type:"log", time:number, logType:string, args:unknown[], trace?: StackFrame[]}> = [];
   let dependencyInfo:{
     type: 'dependencies'
     envVariables?: string[]
@@ -180,13 +180,23 @@ export const run = async (
     await ipc.sendError(err as Error)
   }
 
+  const flushInfos = () => {
+    let promises = [];
+    promises.push(ipc.send({type: "info", data: logs}));
+    promises.push(ipc.send({type:"info", data: dependencyInfo}))
+    logs.length = 0;
+    dependencyInfo = undefined;
+    return Promise.all(promises);
+  };
+
   // Queue handling
   let isRunning = false
   const run = async () => {
     while (queue.length > 0) {
       const args = queue.shift()!
       try {
-        const value = await getValue(internalIpc, ...args)
+        const value = await getValue(internalIpc, ...args);
+        await flushInfos();
         await ipc.send({
           type: 'end',
           data:
@@ -194,7 +204,8 @@ export const run = async (
           duration: 0,
         })
       } catch (e) {
-        await ipc.sendError(e as Error)
+        await flushInfos();
+        await ipc.sendError(e as Error);
       }
     }
     isRunning = false
