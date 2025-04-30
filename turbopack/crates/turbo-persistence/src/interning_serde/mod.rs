@@ -16,7 +16,7 @@ static GLOBAL_INTERN_MAP_REVERSE: LazyLock<DashMap<u32, RcStr>> = LazyLock::new(
 pub fn to_vec<T>(
     config: &pot::Config,
     value: &T,
-    get_global_id: impl FnMut(&RcStr) -> anyhow::Result<u32>,
+    get_global_id: &mut impl FnMut(&RcStr) -> anyhow::Result<u32>,
 ) -> anyhow::Result<Vec<u8>>
 where
     T: Serialize,
@@ -38,7 +38,7 @@ pub fn to_writer<T, W>(
     config: &pot::Config,
     value: &T,
     mut writer: W,
-    mut get_global_id: impl FnMut(&RcStr) -> anyhow::Result<u32>,
+    get_global_id: &mut impl FnMut(&RcStr) -> anyhow::Result<u32>,
 ) -> anyhow::Result<()>
 where
     T: Serialize,
