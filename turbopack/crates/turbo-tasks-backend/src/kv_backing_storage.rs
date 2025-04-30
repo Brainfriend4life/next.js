@@ -152,7 +152,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             };
             let operations =
                 interning_serde::from_slice(&POT_CONFIG, operations.borrow(), |global_ids| {
-                    restore_strings(database, &tx, global_ids)
+                    restore_string(database, &tx, global_ids)
                 })?;
             Ok(operations)
         }
@@ -410,7 +410,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             Ok(Some(interning_serde::from_slice(
                 &POT_CONFIG,
                 bytes.borrow(),
-                |global_ids| restore_strings(database, tx, global_ids),
+                |global_ids| restore_string(database, tx, global_ids),
             )?))
         }
         let result = self
@@ -446,7 +446,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             };
             let result: Vec<CachedDataItem> =
                 interning_serde::from_slice(&POT_CONFIG, bytes.borrow(), |intern_map| {
-                    let de_map = restore_strings(database, tx, intern_map)?;
+                    let de_map = restore_string(database, tx, intern_map)?;
                     Ok(de_map)
                 })?;
             Ok(result)
@@ -461,28 +461,24 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
     }
 }
 
-fn restore_strings<D: KeyValueDatabase>(
+fn restore_string<D: KeyValueDatabase>(
     database: &D,
     tx: &D::ReadTransaction<'_>,
-    global_ids: &[u32],
-) -> Result<Vec<RcStr>> {
-    let mut result = Vec::with_capacity(global_ids.len());
-    for id in global_ids {
-        let Some(value) = database.get(
-            tx,
-            KeySpace::ReverseStringInternMap,
-            IntKey::new(*id).as_ref(),
-        )?
-        else {
-            bail!("Unable to find string for {id}")
-        };
+    global_id: u32,
+) -> Result<RcStr> {
+    let Some(value) = database.get(
+        tx,
+        KeySpace::ReverseStringInternMap,
+        IntKey::new(global_id).as_ref(),
+    )?
+    else {
+        bail!("Unable to find string for {global_id}")
+    };
 
-        result.push(unsafe {
-            // Safety: We interned a rust string, so it is valid utf-8
-            RcStr::from(str::from_utf8_unchecked(value.borrow()))
-        });
-    }
-    Ok(result)
+    Ok(unsafe {
+        // Safety: We interned a rust string, so it is valid utf-8
+        RcStr::from(str::from_utf8_unchecked(value.borrow()))
+    })
 }
 
 fn get_next_free_task_id<'a, S, C>(
