@@ -12,25 +12,33 @@ use turbo_rcstr::RcStr;
 static GLOBAL_INTERN_MAP: LazyLock<DashMap<RcStr, u32>> = LazyLock::new(DashMap::new);
 static GLOBAL_INTERN_MAP_REVERSE: LazyLock<DashMap<u32, RcStr>> = LazyLock::new(DashMap::new);
 
-pub fn to_vec<T>(config: &pot::Config, value: &T) -> pot::Result<Vec<u8>>
+pub fn to_vec<T>(
+    config: &pot::Config,
+    value: &T,
+    get_global_id: impl FnMut(&RcStr) -> u32,
+) -> pot::Result<Vec<u8>>
 where
     T: Serialize,
 {
     let mut vec = Vec::new();
-    to_writer(config, value, &mut vec)?;
+    to_writer(config, value, &mut vec, get_global_id)?;
     Ok(vec)
 }
 
 #[inline(never)] // Mutex outside of the hot path
-fn intern_str(s: &RcStr) -> u32 {
-    *GLOBAL_INTERN_MAP.entry(s.clone()).or_insert_with(|| {
-        let id = GLOBAL_INTERN_MAP.len() as u32;
-        GLOBAL_INTERN_MAP_REVERSE.insert(id, s.clone());
-        id
-    })
+fn store_in_memory_cache(s: &RcStr, global_id: u32) -> u32 {
+    GLOBAL_INTERN_MAP_REVERSE.insert(global_id, s.clone());
+    *GLOBAL_INTERN_MAP
+        .entry(s.clone())
+        .or_insert_with(|| global_id)
 }
 
-pub fn to_writer<T, W>(config: &pot::Config, value: &T, mut writer: W) -> pot::Result<()>
+pub fn to_writer<T, W>(
+    config: &pot::Config,
+    value: &T,
+    mut writer: W,
+    mut get_global_id: impl FnMut(&RcStr) -> u32,
+) -> pot::Result<()>
 where
     T: Serialize,
     W: Write,
@@ -40,8 +48,10 @@ where
 
     let mut intern_map = Vec::with_capacity(ser_map.len());
 
-    for s in ser_map {
-        intern_map.push(intern_str(&s));
+    for s in ser_map.iter() {
+        let id = get_global_id(s);
+        store_in_memory_cache(s, id);
+        intern_map.push(id);
     }
 
     writer.write_all(&intern_map.len().to_le_bytes())?;
@@ -57,7 +67,7 @@ where
 #[inline(never)] // Mutex outside of the hot path
 fn restore_strings_with_in_memory_cache(
     intern_map: Vec<u32>,
-    query_db: impl FnOnce(Vec<u32>) -> anyhow::Result<Vec<RcStr>>,
+    query_db: impl FnOnce(&[u32]) -> anyhow::Result<Vec<RcStr>>,
 ) -> anyhow::Result<Vec<RcStr>> {
     let missing = intern_map
         .iter()
@@ -65,10 +75,10 @@ fn restore_strings_with_in_memory_cache(
         .filter(|global_id| GLOBAL_INTERN_MAP_REVERSE.get(global_id).is_none())
         .collect::<Vec<_>>();
 
-    let missing = query_db(missing)?;
+    let missing_strings = query_db(&missing)?;
 
-    for s in &missing {
-        intern_str(s);
+    for (s, i) in missing_strings.iter().zip(missing.iter()) {
+        store_in_memory_cache(s, *i);
     }
 
     let mut result = Vec::with_capacity(intern_map.len());
@@ -81,7 +91,7 @@ fn restore_strings_with_in_memory_cache(
 pub fn from_slice<T>(
     config: &pot::Config,
     slice: &[u8],
-    query_db: impl FnOnce(Vec<u32>) -> anyhow::Result<Vec<RcStr>>,
+    query_db: impl FnOnce(&[u32]) -> anyhow::Result<Vec<RcStr>>,
 ) -> anyhow::Result<T>
 where
     T: DeserializeOwned,
