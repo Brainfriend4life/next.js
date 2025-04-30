@@ -30,11 +30,6 @@ fn intern_str(s: &RcStr) -> u32 {
     })
 }
 
-#[inline(never)] // Mutex outside of the hot path
-fn restore_str(id: u32) -> RcStr {
-    GLOBAL_INTERN_MAP_REVERSE.get(&id).unwrap().clone()
-}
-
 pub fn to_writer<T, W>(config: &pot::Config, value: &T, mut writer: W) -> pot::Result<()>
 where
     T: Serialize,
@@ -59,7 +54,35 @@ where
     Ok(())
 }
 
-pub fn from_slice<T>(config: &pot::Config, slice: &[u8]) -> pot::Result<T>
+#[inline(never)] // Mutex outside of the hot path
+fn restore_strings_with_in_memory_cache(
+    intern_map: Vec<u32>,
+    query_db: impl FnOnce(Vec<u32>) -> pot::Result<Vec<RcStr>>,
+) -> pot::Result<Vec<RcStr>> {
+    let missing = intern_map
+        .iter()
+        .copied()
+        .filter(|global_id| GLOBAL_INTERN_MAP_REVERSE.get(global_id).is_none())
+        .collect::<Vec<_>>();
+
+    let missing = query_db(missing)?;
+
+    for s in &missing {
+        intern_str(s);
+    }
+
+    let mut result = Vec::with_capacity(intern_map.len());
+    for id in intern_map {
+        result.push(GLOBAL_INTERN_MAP_REVERSE.get(&id).unwrap().clone());
+    }
+    Ok(result)
+}
+
+pub fn from_slice<T>(
+    config: &pot::Config,
+    slice: &[u8],
+    query_db: impl FnOnce(Vec<u32>) -> pot::Result<Vec<RcStr>>,
+) -> pot::Result<T>
 where
     T: DeserializeOwned,
 {
@@ -77,11 +100,7 @@ where
         intern_map.push(u32::from_le_bytes(id));
     }
 
-    let mut de_map = Vec::with_capacity(intern_map.len());
-
-    for &id in &intern_map {
-        de_map.push(restore_str(id));
-    }
+    let de_map = restore_strings_with_in_memory_cache(intern_map, query_db)?;
 
     turbo_rcstr::set_de_map(&de_map, || config.deserialize_from(&mut reader))
 }
