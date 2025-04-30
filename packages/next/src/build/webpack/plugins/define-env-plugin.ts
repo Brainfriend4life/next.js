@@ -275,6 +275,7 @@ export function getDefineEnv({
     'process.env.__NEXT_ALLOWED_REVALIDATE_HEADERS': JSON.stringify(
       config.experimental.allowedRevalidateHeaderKeys
     ),
+    'process.env.__NEXT_I18N_CONFIG': JSON.stringify(config.i18n || null),
     ...(isNodeServer
       ? {
           'process.env.__NEXT_RELATIVE_DIST_DIR': config.distDir,
