@@ -47,10 +47,10 @@ where
 
 #[inline(never)] // Mutex outside of the hot path
 fn restore_strings_with_in_memory_cache(
-    intern_map: Vec<u32>,
+    global_ids: Vec<u32>,
     mut query_db: impl FnMut(u32) -> anyhow::Result<RcStr>,
 ) -> anyhow::Result<Vec<RcStr>> {
-    let missing = intern_map
+    let missing = global_ids
         .iter()
         .copied()
         .filter(|global_id| GLOBAL_INTERN_MAP_REVERSE.get(global_id).is_none());
@@ -60,8 +60,8 @@ fn restore_strings_with_in_memory_cache(
         store_in_memory_cache(&s, global_id);
     }
 
-    let mut result = Vec::with_capacity(intern_map.len());
-    for id in intern_map {
+    let mut result = Vec::with_capacity(global_ids.len());
+    for id in global_ids {
         result.push(GLOBAL_INTERN_MAP_REVERSE.get(&id).unwrap().clone());
     }
     Ok(result)
@@ -77,7 +77,7 @@ where
 {
     let mut reader = std::io::Cursor::new(slice);
 
-    let mut intern_map = Vec::new();
+    let mut global_ids = Vec::new();
 
     let mut len = [0; 4];
     reader.read_exact(&mut len)?;
@@ -86,10 +86,10 @@ where
     for _ in 0..len {
         let mut id = [0; 4];
         reader.read_exact(&mut id)?;
-        intern_map.push(u32::from_le_bytes(id));
+        global_ids.push(u32::from_le_bytes(id));
     }
 
-    let de_map = restore_strings_with_in_memory_cache(intern_map, query_db)?;
+    let de_map = restore_strings_with_in_memory_cache(global_ids, query_db)?;
 
     turbo_rcstr::set_de_map(&de_map, || Ok(config.deserialize_from(&mut reader)?))
 }
