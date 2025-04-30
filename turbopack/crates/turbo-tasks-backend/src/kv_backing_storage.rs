@@ -6,6 +6,7 @@ use serde::Serialize;
 use smallvec::SmallVec;
 use tracing::Span;
 use turbo_persistence::interning_serde;
+use turbo_rcstr::RcStr;
 use turbo_tasks::{backend::CachedTaskType, turbo_tasks_scope, SessionId, TaskId};
 
 use crate::{
@@ -149,7 +150,10 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             else {
                 return Ok(Vec::new());
             };
-            let operations = interning_serde::from_slice(&POT_CONFIG, operations.borrow())?;
+            let operations =
+                interning_serde::from_slice(&POT_CONFIG, operations.borrow(), |global_ids| {
+                    restore_strings(database, &tx, global_ids)
+                })?;
             Ok(operations)
         }
         get(&self.database).unwrap_or_default()
@@ -406,6 +410,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             Ok(Some(interning_serde::from_slice(
                 &POT_CONFIG,
                 bytes.borrow(),
+                |global_ids| restore_strings(database, tx, global_ids),
             )?))
         }
         let result = self
@@ -440,7 +445,10 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
                 return Ok(Vec::new());
             };
             let result: Vec<CachedDataItem> =
-                interning_serde::from_slice(&POT_CONFIG, bytes.borrow())?;
+                interning_serde::from_slice(&POT_CONFIG, bytes.borrow(), |intern_map| {
+                    let de_map = restore_strings(database, tx, intern_map)?;
+                    Ok(de_map)
+                })?;
             Ok(result)
         }
         self.with_tx(tx, |tx| lookup(&self.database, tx, task_id, category))
@@ -451,6 +459,13 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
     fn shutdown(&self) -> Result<()> {
         self.database.shutdown()
     }
+}
+
+fn restore_strings<D: KeyValueDatabase>(
+    database: &D,
+    tx: &D::ReadTransaction<'_>,
+    global_ids: Vec<u32>,
+) -> Result<Vec<RcStr>> {
 }
 
 fn get_next_free_task_id<'a, S, C>(
