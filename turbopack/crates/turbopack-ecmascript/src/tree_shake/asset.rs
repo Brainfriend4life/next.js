@@ -113,7 +113,7 @@ impl EcmascriptAnalyzable for EcmascriptModulePartAsset {
                 exports: analyze_ref.exports,
                 async_module_info,
                 module: ResolvedVc::upcast(module.full_module),
-                unused_export_removal: module.full_module.options().await?.unused_export_removal,
+                remove_unused_exports: module.full_module.options().await?.remove_unused_exports,
             },
         ))
     }

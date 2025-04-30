@@ -265,7 +265,7 @@ impl EcmascriptAnalyzable for EcmascriptModuleFacadeModule {
                 exports: self.get_exports().to_resolved().await?,
                 async_module_info,
                 module: this.module,
-                unused_export_removal: this.options.await?.unused_export_removal,
+                remove_unused_exports: this.options.await?.remove_unused_exports,
             },
         ))
     }

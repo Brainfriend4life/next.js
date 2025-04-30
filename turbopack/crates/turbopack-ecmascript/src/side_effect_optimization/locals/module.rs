@@ -127,7 +127,7 @@ impl EcmascriptAnalyzable for EcmascriptModuleLocalsModule {
                 exports,
                 async_module_info,
                 module: ResolvedVc::upcast(original_module),
-                unused_export_removal: original_module.options().await?.unused_export_removal,
+                remove_unused_exports: original_module.options().await?.remove_unused_exports,
             },
         ))
     }
