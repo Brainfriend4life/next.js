@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, cmp::max, sync::Arc};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use serde::Serialize;
 use smallvec::SmallVec;
@@ -464,8 +464,25 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
 fn restore_strings<D: KeyValueDatabase>(
     database: &D,
     tx: &D::ReadTransaction<'_>,
-    global_ids: Vec<u32>,
+    global_ids: &[u32],
 ) -> Result<Vec<RcStr>> {
+    let mut result = Vec::with_capacity(global_ids.len());
+    for id in global_ids {
+        let Some(value) = database.get(
+            tx,
+            KeySpace::ReverseStringInternMap,
+            IntKey::new(*id).as_ref(),
+        )?
+        else {
+            bail!("Unable to find string for {id}")
+        };
+
+        result.push(unsafe {
+            // Safety: We interned a rust string, so it is valid utf-8
+            RcStr::from(str::from_utf8_unchecked(value.borrow()))
+        });
+    }
+    Ok(result)
 }
 
 fn get_next_free_task_id<'a, S, C>(
