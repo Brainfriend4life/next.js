@@ -5,25 +5,22 @@ use std::{
     sync::LazyLock,
 };
 
-use anyhow::Context;
 use dashmap::DashMap;
+use indexmap::IndexSet;
+use rustc_hash::FxBuildHasher;
 use serde::{de::DeserializeOwned, Serialize};
 use turbo_rcstr::RcStr;
 
 static GLOBAL_INTERN_MAP: LazyLock<DashMap<RcStr, u32>> = LazyLock::new(DashMap::new);
 static GLOBAL_INTERN_MAP_REVERSE: LazyLock<DashMap<u32, RcStr>> = LazyLock::new(DashMap::new);
 
-pub fn to_vec<T>(
-    config: &pot::Config,
-    value: &T,
-    get_global_id: &mut impl FnMut(&RcStr) -> anyhow::Result<u32>,
-) -> anyhow::Result<Vec<u8>>
+pub fn to_vec<T>(config: &pot::Config, value: &T) -> anyhow::Result<(Vec<u8>, RcStrToLocalId)>
 where
     T: Serialize,
 {
     let mut vec = Vec::new();
-    to_writer(config, value, &mut vec, get_global_id)?;
-    Ok(vec)
+    let ser_map = to_writer(config, value, &mut vec)?;
+    Ok((vec, ser_map))
 }
 
 #[inline(never)] // Mutex outside of the hot path
@@ -34,39 +31,18 @@ fn store_in_memory_cache(s: &RcStr, global_id: u32) -> u32 {
         .or_insert_with(|| global_id)
 }
 
-pub fn to_writer<T, W>(
-    config: &pot::Config,
-    value: &T,
-    mut writer: W,
-    get_global_id: &mut impl FnMut(&RcStr) -> anyhow::Result<u32>,
-) -> anyhow::Result<()>
+#[derive(Default)]
+pub struct RcStrToLocalId(IndexSet<RcStr, FxBuildHasher>);
+
+pub fn to_writer<T, W>(config: &pot::Config, value: &T, writer: W) -> anyhow::Result<RcStrToLocalId>
 where
     T: Serialize,
     W: Write,
 {
-    let (result, ser_map) = turbo_rcstr::set_ser_map(|| config.serialize(value));
-    let value = result?;
+    let (result, ser_map) = turbo_rcstr::set_ser_map(|| config.serialize_into(value, writer));
+    result?;
 
-    let mut intern_map = Vec::with_capacity(ser_map.len());
-
-    for s in ser_map.iter() {
-        if let Some(id) = GLOBAL_INTERN_MAP.get(s).as_deref().copied() {
-            intern_map.push(id);
-        } else {
-            let id = get_global_id(s).context("failed to get global id")?;
-            store_in_memory_cache(s, id);
-            intern_map.push(id);
-        }
-    }
-
-    writer.write_all(&intern_map.len().to_le_bytes())?;
-    for &id in &intern_map {
-        writer.write_all(&id.to_le_bytes())?;
-    }
-
-    writer.write_all(&value)?;
-
-    Ok(())
+    Ok(RcStrToLocalId(ser_map))
 }
 
 #[inline(never)] // Mutex outside of the hot path
