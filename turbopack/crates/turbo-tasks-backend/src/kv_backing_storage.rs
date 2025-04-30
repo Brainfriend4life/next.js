@@ -149,7 +149,7 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             else {
                 return Ok(Vec::new());
             };
-            let operations = POT_CONFIG.deserialize(operations.borrow())?;
+            let operations = interning_serde::from_slice(&POT_CONFIG, operations.borrow())?;
             Ok(operations)
         }
         get(&self.database).unwrap_or_default()
@@ -403,7 +403,10 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             else {
                 return Ok(None);
             };
-            Ok(Some(POT_CONFIG.deserialize(bytes.borrow())?))
+            Ok(Some(interning_serde::from_slice(
+                &POT_CONFIG,
+                bytes.borrow(),
+            )?))
         }
         let result = self
             .with_tx(tx, |tx| lookup(&self.database, tx, task_id))
@@ -436,7 +439,8 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
             else {
                 return Ok(Vec::new());
             };
-            let result: Vec<CachedDataItem> = POT_CONFIG.deserialize(bytes.borrow())?;
+            let result: Vec<CachedDataItem> =
+                interning_serde::from_slice(&POT_CONFIG, bytes.borrow())?;
             Ok(result)
         }
         self.with_tx(tx, |tx| lookup(&self.database, tx, task_id, category))
@@ -518,8 +522,7 @@ fn serialize_task_type(
     task_id: u32,
 ) -> Result<()> {
     task_type_bytes.clear();
-    POT_CONFIG
-        .serialize_into(&**task_type, &mut task_type_bytes)
+    interning_serde::to_writer(&POT_CONFIG, task_type, &mut task_type_bytes)
         .with_context(|| anyhow!("Unable to serialize task {task_id} cache key {task_type:?}"))?;
     #[cfg(feature = "verify_serialization")]
     {
