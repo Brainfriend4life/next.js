@@ -53,8 +53,7 @@ fn restore_strings_with_in_memory_cache(
     let missing = intern_map
         .iter()
         .copied()
-        .filter(|global_id| GLOBAL_INTERN_MAP_REVERSE.get(global_id).is_none())
-        .collect::<Vec<_>>();
+        .filter(|global_id| GLOBAL_INTERN_MAP_REVERSE.get(global_id).is_none());
 
     for global_id in missing {
         let s = query_db(global_id)?;
