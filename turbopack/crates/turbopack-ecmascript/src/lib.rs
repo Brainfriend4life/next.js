@@ -1012,6 +1012,9 @@ impl EcmascriptModuleContent {
             .try_join()
             .await?;
 
+        // TODO properly merge ASTs:
+        // - somehow merge the SourceMap struct
+        // - rewrite the SyntaxContexts to make hygiene rename local variable collisions.
         let merged_ast = Program::Module(swc_core::ecma::ast::Module {
             span: DUMMY_SP,
             shebang: None,
