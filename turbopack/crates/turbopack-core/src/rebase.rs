@@ -43,8 +43,8 @@ impl OutputAsset for RebasedAsset {
     fn path(&self) -> Vc<FileSystemPath> {
         FileSystemPath::rebase(
             self.module.ident().path(),
-            *self.input_dir,
-            *self.output_dir,
+            self.input_dir.clone(),
+            self.output_dir.clone(),
         )
     }
 
