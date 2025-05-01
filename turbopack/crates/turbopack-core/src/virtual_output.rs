@@ -45,8 +45,8 @@ impl VirtualOutputAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for VirtualOutputAsset {
     #[turbo_tasks::function]
-    fn path(&self) -> FileSystemPath {
-        *self.path
+    fn path(&self) -> Vc<FileSystemPath> {
+        self.path.clone()
     }
 
     #[turbo_tasks::function]
