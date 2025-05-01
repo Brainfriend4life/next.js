@@ -1011,7 +1011,7 @@ pub fn get_relative_path_to(path: &str, other_path: &str) -> String {
     result.join("/")
 }
 
-#[turbo_tasks::value]
+#[turbo_tasks::value(shared)]
 #[derive(Debug, Clone, TaskInput, Hash)]
 pub struct FileSystemPath {
     pub fs: ResolvedVc<Box<dyn FileSystem>>,
