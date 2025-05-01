@@ -89,7 +89,6 @@ impl AttachedFileSystem {
         path: FileSystemPath,
     ) -> Result<FileSystemPath> {
         let this = self.await?;
-        let path = path.await?;
         let self_fs: ResolvedVc<Box<dyn FileSystem>> = ResolvedVc::upcast(self);
 
         if path.fs != self_fs {
@@ -102,7 +101,7 @@ impl AttachedFileSystem {
             )
         }
 
-        let child_path = self.child_path().await?;
+        let child_path = self.child_path();
         Ok(if let Some(inner_path) = child_path.get_path_to(&path) {
             this.child_fs
                 .root()
