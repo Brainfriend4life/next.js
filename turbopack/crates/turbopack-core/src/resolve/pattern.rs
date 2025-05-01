@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::Instrument;
 use turbo_rcstr::RcStr;
 use turbo_tasks::{
-    debug::ValueDebugFormat, trace::TraceRawVcs, NonLocalValue, ResolvedVc, Value, ValueToString,
-    Vc,
+    debug::ValueDebugFormat, trace::TraceRawVcs, NonLocalValue, Value, ValueToString, Vc,
 };
 use turbo_tasks_fs::{
     util::normalize_path, FileSystemPath, LinkContent, LinkType, RawDirectoryContent,
