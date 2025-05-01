@@ -1300,16 +1300,12 @@ impl FileSystemPath {
         Ok(None)
     }
 
-    pub fn read_glob(
-        self: Vc<Self>,
-        glob: Vc<Glob>,
-        include_dot_files: bool,
-    ) -> Vc<ReadGlobResult> {
+    pub fn read_glob(&self, glob: Vc<Glob>, include_dot_files: bool) -> Vc<ReadGlobResult> {
         read_glob(self, glob, include_dot_files)
     }
 
-    pub fn root(self: Vc<Self>) -> Vc<Self> {
-        self.fs().root()
+    pub fn root(&self) -> Vc<Self> {
+        self.fs.root()
     }
 
     pub fn fs(&self) -> Vc<Box<dyn FileSystem>> {
@@ -1450,7 +1446,7 @@ impl FileSystemPath {
         self.fs.metadata(self.clone())
     }
 
-    pub fn realpath(&self) -> FileSystemPath {
+    pub fn realpath(&self) -> Result<FileSystemPath> {
         self.realpath_with_links().path()
     }
 
@@ -2271,7 +2267,7 @@ pub enum DirectoryEntry {
 impl DirectoryEntry {
     pub async fn resolve_symlink(self) -> Result<Self> {
         if let DirectoryEntry::Symlink(symlink) = self {
-            let real_path = symlink.realpath().to_resolved().await?;
+            let real_path = symlink.realpath()?;
             match *real_path.get_type().await? {
                 FileSystemEntryType::Directory => Ok(DirectoryEntry::Directory(real_path)),
                 FileSystemEntryType::File => Ok(DirectoryEntry::File(real_path)),
