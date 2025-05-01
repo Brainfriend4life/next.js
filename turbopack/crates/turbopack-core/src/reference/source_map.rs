@@ -64,7 +64,7 @@ impl GenerateSourceMap for SourceMapReference {
 
         let content = file.read().await?;
         let content = content.as_content().map(|file| file.content());
-        let source_map = resolve_source_map_sources(content, *self.from).await?;
+        let source_map = resolve_source_map_sources(content, self.from.clone()).await?;
         Ok(Vc::cell(source_map))
     }
 }
@@ -74,11 +74,7 @@ impl ValueToString for SourceMapReference {
     #[turbo_tasks::function]
     async fn to_string(&self) -> Result<Vc<RcStr>> {
         Ok(Vc::cell(
-            format!(
-                "source map file is referenced by {}",
-                self.from.to_string().await?
-            )
-            .into(),
+            format!("source map file is referenced by {}", self.from.to_string()).into(),
         ))
     }
 }
