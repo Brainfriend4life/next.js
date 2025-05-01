@@ -159,7 +159,7 @@ impl ChunkData {
             chunks
                 .await?
                 .iter()
-                .map(|&chunk| ChunkData::from_asset(output_root, *chunk))
+                .map(|&chunk| ChunkData::from_asset(output_root.clone(), *chunk))
                 .try_join()
                 .await?
                 .into_iter()
