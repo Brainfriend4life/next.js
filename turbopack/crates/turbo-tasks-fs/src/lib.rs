@@ -1358,20 +1358,18 @@ impl FileSystemPath {
     /// * The entire file name if there is no embedded `.`;
     /// * The entire file name if the file name begins with `.` and has no other `.`s within;
     /// * Otherwise, the portion of the file name before the final `.`
-    #[turbo_tasks::function]
-    pub fn file_stem(&self) -> Vc<Option<RcStr>> {
+    pub fn file_stem(&self) -> Option<RcStr> {
         let (_, file_stem, _) = self.split_file_stem_extension();
         if file_stem.is_empty() {
-            return Vc::cell(None);
+            return None;
         }
-        Vc::cell(Some(file_stem.into()))
+        Some(file_stem.into())
     }
 
     /// See [`truncate_file_name_with_hash`]. Preserves the input [`Vc`] if no truncation was
     /// performed.
-    #[turbo_tasks::function]
-    pub async fn truncate_file_name_with_hash_vc(self: Vc<Self>) -> Result<FileSystemPath> {
-        Ok(match self.await?.truncate_file_name_with_hash()? {
+    pub fn truncate_file_name_with_hash_vc(self: Vc<Self>) -> Result<FileSystemPath> {
+        Ok(match self.truncate_file_name_with_hash()? {
             Cow::Borrowed(_) => self,
             Cow::Owned(path) => path.cell(),
         })
@@ -1384,12 +1382,11 @@ impl Display for FileSystemPath {
     }
 }
 
-#[turbo_tasks::function]
 pub async fn rebase(
     fs_path: FileSystemPath,
     old_base: FileSystemPath,
     new_base: FileSystemPath,
-) -> Result<Vc<FileSystemPath>> {
+) -> Result<FileSystemPath> {
     let new_path;
     if old_base.path.is_empty() {
         if new_base.path.is_empty() {
@@ -1415,61 +1412,57 @@ pub async fn rebase(
                 .into();
         }
     }
-    Ok(new_base.fs.root().join(new_path))
+    new_base.fs.root().await?.join(new_path)
 }
 
 // Not turbo-tasks functions, only delegating
 impl FileSystemPath {
     pub fn read(&self) -> Vc<FileContent> {
-        self.fs.read(self)
+        self.fs.read(self.clone())
     }
 
-    pub fn read_link(self: Vc<Self>) -> Vc<LinkContent> {
-        self.fs().read_link(self)
+    pub fn read_link(&self) -> Vc<LinkContent> {
+        self.fs.read_link(self.clone())
     }
 
-    pub fn read_json(self: Vc<Self>) -> Vc<FileJsonContent> {
-        self.fs().read(self).parse_json()
+    pub fn read_json(&self) -> Vc<FileJsonContent> {
+        self.fs.read(self.clone()).parse_json()
     }
 
-    pub fn read_json5(self: Vc<Self>) -> Vc<FileJsonContent> {
-        self.fs().read(self).parse_json5()
+    pub fn read_json5(&self) -> Vc<FileJsonContent> {
+        self.fs.read(self.clone()).parse_json5()
     }
 
     /// Reads content of a directory.
     ///
     /// DETERMINISM: Result is in random order. Either sort result or do not
     /// depend on the order.
-    pub fn raw_read_dir(self: Vc<Self>) -> Vc<RawDirectoryContent> {
-        self.fs().raw_read_dir(self)
+    pub fn raw_read_dir(&self) -> Vc<RawDirectoryContent> {
+        self.fs.raw_read_dir(self.clone())
     }
 
-    pub fn track(self: Vc<Self>) -> Vc<Completion> {
-        self.fs().track(self)
+    pub fn track(&self) -> Vc<Completion> {
+        self.fs.track(self.clone())
     }
 
-    pub fn write(self: Vc<Self>, content: Vc<FileContent>) -> Vc<()> {
-        self.fs().write(self, content)
+    pub fn write(&self, content: Vc<FileContent>) -> Vc<()> {
+        self.fs.write(self.clone(), content)
     }
 
-    pub fn write_link(self: Vc<Self>, target: Vc<LinkContent>) -> Vc<()> {
-        self.fs().write_link(self, target)
+    pub fn write_link(&self, target: Vc<LinkContent>) -> Vc<()> {
+        self.fs.write_link(self.clone(), target)
     }
 
-    pub fn metadata(self: Vc<Self>) -> Vc<FileMeta> {
-        self.fs().metadata(self)
+    pub fn metadata(&self) -> Vc<FileMeta> {
+        self.fs.metadata(self.clone())
     }
 
-    pub fn realpath(self: Vc<Self>) -> FileSystemPath {
+    pub fn realpath(&self) -> FileSystemPath {
         self.realpath_with_links().path()
     }
 
-    pub fn rebase(
-        fs_path: FileSystemPath,
-        old_base: FileSystemPath,
-        new_base: FileSystemPath,
-    ) -> FileSystemPath {
-        rebase(fs_path, old_base, new_base)
+    pub fn rebase(&self, old_base: FileSystemPath, new_base: FileSystemPath) -> FileSystemPath {
+        rebase(self, old_base, new_base)
     }
 }
 
