@@ -534,7 +534,7 @@ impl SourceMap {
 }
 
 #[turbo_tasks::function]
-fn sourcemap_content_fs_root() -> FileSystemPath {
+fn sourcemap_content_fs_root() -> Vc<FileSystemPath> {
     VirtualFileSystem::new_with_name("sourcemap-content".into()).root()
 }
 
