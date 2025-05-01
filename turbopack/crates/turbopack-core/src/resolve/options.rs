@@ -428,7 +428,7 @@ async fn import_mapping_to_result(
             },
             ty: *ty,
             traced: *traced,
-            lookup_dir: *lookup_dir,
+            lookup_dir: lookup_dir.clone(),
         },
         ReplacedImportMapping::Ignore => {
             ImportMapResult::Result(ResolveResult::primary(ResolveResultItem::Ignore))
@@ -440,11 +440,17 @@ async fn import_mapping_to_result(
             let request = Request::parse(Value::new(name.clone()))
                 .to_resolved()
                 .await?;
-            ImportMapResult::Alias(request, *context)
+            ImportMapResult::Alias(request, context.clone())
         }
         ReplacedImportMapping::Alternatives(list) => ImportMapResult::Alternatives(
             list.iter()
-                .map(|mapping| Box::pin(import_mapping_to_result(**mapping, lookup_path, request)))
+                .map(|mapping| {
+                    Box::pin(import_mapping_to_result(
+                        **mapping,
+                        lookup_path.clone(),
+                        request.clone(),
+                    ))
+                })
                 .try_join()
                 .await?,
         ),
