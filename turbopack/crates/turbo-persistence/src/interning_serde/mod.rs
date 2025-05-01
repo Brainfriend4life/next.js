@@ -32,7 +32,35 @@ fn store_in_memory_cache(s: &RcStr, global_id: u32) -> u32 {
 }
 
 #[derive(Default)]
-pub struct RcStrToLocalId(IndexSet<RcStr, FxBuildHasher>);
+pub struct RcStrToLocalId(pub IndexSet<RcStr, FxBuildHasher>);
+
+#[derive(Default)]
+pub struct LocalIdToGlobalId(Vec<u32>);
+
+impl From<Vec<u32>> for LocalIdToGlobalId {
+    fn from(value: Vec<u32>) -> Self {
+        Self(value)
+    }
+}
+
+impl LocalIdToGlobalId {
+    fn read(reader: &mut impl Read) -> anyhow::Result<Self> {
+        let mut global_ids = Vec::new();
+
+        let mut len = [0; 4];
+        reader.read_exact(&mut len)?;
+        let len = u32::from_le_bytes(len);
+        global_ids.reserve(len as usize);
+
+        for _ in 0..len {
+            let mut id = [0; 4];
+            reader.read_exact(&mut id)?;
+            global_ids.push(u32::from_le_bytes(id));
+        }
+
+        Ok(Self(global_ids))
+    }
+}
 
 pub fn to_writer<T, W>(config: &pot::Config, value: &T, writer: W) -> anyhow::Result<RcStrToLocalId>
 where
@@ -77,19 +105,9 @@ where
 {
     let mut reader = std::io::Cursor::new(slice);
 
-    let mut global_ids = Vec::new();
+    let global_ids = LocalIdToGlobalId::read(&mut reader)?;
 
-    let mut len = [0; 4];
-    reader.read_exact(&mut len)?;
-    let len = u32::from_le_bytes(len);
-
-    for _ in 0..len {
-        let mut id = [0; 4];
-        reader.read_exact(&mut id)?;
-        global_ids.push(u32::from_le_bytes(id));
-    }
-
-    let de_map = restore_strings_with_in_memory_cache(global_ids, query_db)?;
+    let de_map = restore_strings_with_in_memory_cache(global_ids.0, query_db)?;
 
     turbo_rcstr::set_de_map(&de_map, || Ok(config.deserialize_from(&mut reader)?))
 }
