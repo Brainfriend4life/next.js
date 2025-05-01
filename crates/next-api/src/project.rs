@@ -595,7 +595,7 @@ impl ProjectDefineEnv {
 
 #[turbo_tasks::value(shared)]
 struct ConflictIssue {
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
     title: ResolvedVc<StyledString>,
     description: ResolvedVc<StyledString>,
     severity: ResolvedVc<IssueSeverity>,

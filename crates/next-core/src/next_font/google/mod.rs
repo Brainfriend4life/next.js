@@ -73,13 +73,13 @@ struct FontData(FxIndexMap<RcStr, FontDataEntry>);
 
 #[turbo_tasks::value(shared)]
 pub(crate) struct NextFontGoogleReplacer {
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextFontGoogleReplacer {
     #[turbo_tasks::function]
-    pub fn new(project_path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(project_path: FileSystemPath) -> Vc<Self> {
         Self::cell(NextFontGoogleReplacer { project_path })
     }
 
@@ -178,7 +178,7 @@ impl ImportMappingReplacement for NextFontGoogleReplacer {
 
 #[turbo_tasks::value(shared)]
 pub struct NextFontGoogleCssModuleReplacer {
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
     execution_context: ResolvedVc<ExecutionContext>,
 }
 
@@ -186,7 +186,7 @@ pub struct NextFontGoogleCssModuleReplacer {
 impl NextFontGoogleCssModuleReplacer {
     #[turbo_tasks::function]
     pub fn new(
-        project_path: ResolvedFileSystemPath,
+        project_path: FileSystemPath,
         execution_context: ResolvedVc<ExecutionContext>,
     ) -> Vc<Self> {
         Self::cell(NextFontGoogleCssModuleReplacer {
@@ -310,13 +310,13 @@ struct NextFontGoogleFontFileOptions {
 
 #[turbo_tasks::value(shared)]
 pub struct NextFontGoogleFontFileReplacer {
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextFontGoogleFontFileReplacer {
     #[turbo_tasks::function]
-    pub fn new(project_path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(project_path: FileSystemPath) -> Vc<Self> {
         Self::cell(NextFontGoogleFontFileReplacer { project_path })
     }
 }
@@ -389,7 +389,7 @@ impl ImportMappingReplacement for NextFontGoogleFontFileReplacer {
 }
 
 #[turbo_tasks::function]
-async fn load_font_data(project_root: ResolvedFileSystemPath) -> Result<Vc<FontData>> {
+async fn load_font_data(project_root: FileSystemPath) -> Result<Vc<FontData>> {
     let data: FontData = load_next_js_templateon(
         project_root,
         "dist/compiled/@next/font/dist/google/font-data.json".into(),

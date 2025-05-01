@@ -11,28 +11,28 @@ use crate::next_import_map::get_next_package;
 /// A final route in the pages directory.
 #[turbo_tasks::value]
 pub struct PagesStructureItem {
-    pub base_path: ResolvedFileSystemPath,
+    pub base_path: FileSystemPath,
     pub extensions: ResolvedVc<Vec<RcStr>>,
-    pub fallback_path: Option<ResolvedFileSystemPath>,
+    pub fallback_path: Option<FileSystemPath>,
 
     /// Pathname of this item in the Next.js router.
-    pub next_router_path: ResolvedFileSystemPath,
+    pub next_router_path: FileSystemPath,
     /// Unique path corresponding to this item. This differs from
     /// `next_router_path` in that it will include the trailing /index for index
     /// routes, which allows for differentiating with potential /index
     /// directories.
-    pub original_path: ResolvedFileSystemPath,
+    pub original_path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl PagesStructureItem {
     #[turbo_tasks::function]
     fn new(
-        base_path: ResolvedFileSystemPath,
+        base_path: FileSystemPath,
         extensions: ResolvedVc<Vec<RcStr>>,
-        fallback_path: Option<ResolvedFileSystemPath>,
-        next_router_path: ResolvedFileSystemPath,
-        original_path: ResolvedFileSystemPath,
+        fallback_path: Option<FileSystemPath>,
+        next_router_path: FileSystemPath,
+        original_path: FileSystemPath,
     ) -> Vc<Self> {
         PagesStructureItem {
             base_path,
@@ -80,8 +80,8 @@ pub struct PagesStructure {
 
 #[turbo_tasks::value]
 pub struct PagesDirectoryStructure {
-    pub project_path: ResolvedFileSystemPath,
-    pub next_router_path: ResolvedFileSystemPath,
+    pub project_path: FileSystemPath,
+    pub next_router_path: FileSystemPath,
     pub items: Vec<ResolvedVc<PagesStructureItem>>,
     pub children: Vec<ResolvedVc<PagesDirectoryStructure>>,
 }

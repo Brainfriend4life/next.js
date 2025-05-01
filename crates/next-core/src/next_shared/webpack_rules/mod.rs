@@ -12,7 +12,7 @@ pub(crate) mod babel;
 pub(crate) mod sass;
 
 pub async fn webpack_loader_options(
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
     next_config: Vc<NextConfig>,
     foreign: bool,
     conditions: Vec<RcStr>,

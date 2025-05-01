@@ -42,7 +42,7 @@ lazy_static! {
 
 #[turbo_tasks::value(shared)]
 pub struct InvalidImportModuleIssue {
-    pub file_path: ResolvedFileSystemPath,
+    pub file_path: FileSystemPath,
     pub messages: Vec<RcStr>,
     pub skip_context_message: bool,
 }
@@ -99,7 +99,7 @@ impl Issue for InvalidImportModuleIssue {
 /// configured when each context sets up its resolve options.
 #[turbo_tasks::value]
 pub(crate) struct InvalidImportResolvePlugin {
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
     invalid_import: RcStr,
     message: Vec<RcStr>,
 }
@@ -107,11 +107,7 @@ pub(crate) struct InvalidImportResolvePlugin {
 #[turbo_tasks::value_impl]
 impl InvalidImportResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(
-        root: ResolvedFileSystemPath,
-        invalid_import: RcStr,
-        message: Vec<RcStr>,
-    ) -> Vc<Self> {
+    pub fn new(root: FileSystemPath, invalid_import: RcStr, message: Vec<RcStr>) -> Vc<Self> {
         InvalidImportResolvePlugin {
             root,
             invalid_import,
@@ -131,7 +127,7 @@ impl BeforeResolvePlugin for InvalidImportResolvePlugin {
     #[turbo_tasks::function]
     fn before_resolve(
         &self,
-        lookup_path: ResolvedFileSystemPath,
+        lookup_path: FileSystemPath,
         _reference_type: Value<ReferenceType>,
         _request: Vc<Request>,
     ) -> Vc<ResolveResultOption> {
@@ -154,7 +150,7 @@ impl BeforeResolvePlugin for InvalidImportResolvePlugin {
 /// Only the contexts that alises `client-only` to
 /// `next/dist/compiled/client-only/error` should use this.
 pub(crate) fn get_invalid_client_only_resolve_plugin(
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
 ) -> Vc<InvalidImportResolvePlugin> {
     InvalidImportResolvePlugin::new(
         *root,
@@ -171,7 +167,7 @@ pub(crate) fn get_invalid_client_only_resolve_plugin(
 /// Only the contexts that alises `server-only` to
 /// `next/dist/compiled/server-only/index` should use this.
 pub(crate) fn get_invalid_server_only_resolve_plugin(
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
 ) -> Vc<InvalidImportResolvePlugin> {
     InvalidImportResolvePlugin::new(
         *root,
@@ -186,7 +182,7 @@ pub(crate) fn get_invalid_server_only_resolve_plugin(
 
 /// Returns a resolve plugin if context have imports to `styled-jsx`.
 pub(crate) fn get_invalid_styled_jsx_resolve_plugin(
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
 ) -> Vc<InvalidImportResolvePlugin> {
     InvalidImportResolvePlugin::new(
         *root,
@@ -205,13 +201,13 @@ pub(crate) fn get_invalid_styled_jsx_resolve_plugin(
 
 #[turbo_tasks::value]
 pub(crate) struct NextExternalResolvePlugin {
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextExternalResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(project_path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(project_path: FileSystemPath) -> Vc<Self> {
         NextExternalResolvePlugin { project_path }.cell()
     }
 }
@@ -254,17 +250,14 @@ impl AfterResolvePlugin for NextExternalResolvePlugin {
 
 #[turbo_tasks::value]
 pub(crate) struct NextNodeSharedRuntimeResolvePlugin {
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
     server_context_type: ServerContextType,
 }
 
 #[turbo_tasks::value_impl]
 impl NextNodeSharedRuntimeResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(
-        root: ResolvedFileSystemPath,
-        server_context_type: Value<ServerContextType>,
-    ) -> Vc<Self> {
+    pub fn new(root: FileSystemPath, server_context_type: Value<ServerContextType>) -> Vc<Self> {
         let server_context_type = server_context_type.into_value();
         NextNodeSharedRuntimeResolvePlugin {
             root,
@@ -330,13 +323,13 @@ impl AfterResolvePlugin for NextNodeSharedRuntimeResolvePlugin {
 /// telemetry events if there is a match.
 #[turbo_tasks::value]
 pub(crate) struct ModuleFeatureReportResolvePlugin {
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl ModuleFeatureReportResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(root: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(root: FileSystemPath) -> Vc<Self> {
         ModuleFeatureReportResolvePlugin { root }.cell()
     }
 }
@@ -387,13 +380,13 @@ impl BeforeResolvePlugin for ModuleFeatureReportResolvePlugin {
 
 #[turbo_tasks::value]
 pub(crate) struct NextSharedRuntimeResolvePlugin {
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl NextSharedRuntimeResolvePlugin {
     #[turbo_tasks::function]
-    pub fn new(root: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(root: FileSystemPath) -> Vc<Self> {
         NextSharedRuntimeResolvePlugin { root }.cell()
     }
 }

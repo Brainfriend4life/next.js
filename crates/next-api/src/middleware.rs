@@ -47,7 +47,7 @@ pub struct MiddlewareEndpoint {
     build_id: RcStr,
     asset_context: ResolvedVc<Box<dyn AssetContext>>,
     source: ResolvedVc<Box<dyn Source>>,
-    app_dir: Option<ResolvedFileSystemPath>,
+    app_dir: Option<FileSystemPath>,
     ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
 }
 
@@ -59,7 +59,7 @@ impl MiddlewareEndpoint {
         build_id: RcStr,
         asset_context: ResolvedVc<Box<dyn AssetContext>>,
         source: ResolvedVc<Box<dyn Source>>,
-        app_dir: Option<ResolvedFileSystemPath>,
+        app_dir: Option<FileSystemPath>,
         ecmascript_client_reference_transition_name: Option<ResolvedVc<RcStr>>,
     ) -> Vc<Self> {
         Self {

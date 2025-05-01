@@ -142,15 +142,15 @@ pub async fn get_client_compile_time_info(
 #[turbo_tasks::value(shared, serialization = "auto_for_input")]
 #[derive(Debug, Copy, Clone, Hash)]
 pub enum ClientContextType {
-    Pages { pages_dir: ResolvedFileSystemPath },
-    App { app_dir: ResolvedFileSystemPath },
+    Pages { pages_dir: FileSystemPath },
+    App { app_dir: FileSystemPath },
     Fallback,
     Other,
 }
 
 #[turbo_tasks::function]
 pub async fn get_client_resolve_options_context(
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
     ty: Value<ClientContextType>,
     mode: Vc<NextMode>,
     next_config: Vc<NextConfig>,
@@ -224,7 +224,7 @@ pub async fn get_client_resolve_options_context(
 
 #[turbo_tasks::function]
 pub async fn get_client_module_options_context(
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
     execution_context: ResolvedVc<ExecutionContext>,
     env: ResolvedVc<Environment>,
     ty: Value<ClientContextType>,
@@ -417,8 +417,8 @@ pub async fn get_client_module_options_context(
 
 #[turbo_tasks::function]
 pub async fn get_client_chunking_context(
-    root_path: ResolvedFileSystemPath,
-    client_root: ResolvedFileSystemPath,
+    root_path: FileSystemPath,
+    client_root: FileSystemPath,
     client_root_to_root_path: ResolvedVc<RcStr>,
     asset_prefix: ResolvedVc<Option<RcStr>>,
     chunk_suffix_path: ResolvedVc<Option<RcStr>>,

@@ -98,7 +98,7 @@ pub fn get_asset_path_from_pathname(pathname: &str, ext: &str) -> String {
 #[turbo_tasks::function]
 pub async fn get_transpiled_packages(
     next_config: Vc<NextConfig>,
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
 ) -> Result<Vc<Vec<RcStr>>> {
     let mut transpile_packages: Vec<RcStr> = next_config.transpile_packages().owned().await?;
 
@@ -115,7 +115,7 @@ pub async fn get_transpiled_packages(
 
 pub async fn foreign_code_context_condition(
     next_config: Vc<NextConfig>,
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
 ) -> Result<ContextCondition> {
     let transpiled_packages = get_transpiled_packages(next_config, *project_path).await?;
 
@@ -948,7 +948,7 @@ pub fn virtual_next_js_template_path(project_path: FileSystemPath, file: String)
 }
 
 pub async fn load_next_js_templateon<T: DeserializeOwned>(
-    project_path: ResolvedFileSystemPath,
+    project_path: FileSystemPath,
     path: RcStr,
 ) -> Result<T> {
     let file_path = get_next_package(*project_path).join(path.clone());

@@ -240,7 +240,7 @@ struct VisitClientReferenceNode {
 )]
 enum VisitClientReferenceNodeState {
     Entry {
-        entry_path: ResolvedFileSystemPath,
+        entry_path: FileSystemPath,
     },
     InServerComponent {
         server_component: ResolvedVc<NextServerComponentModule>,

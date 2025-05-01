@@ -91,7 +91,7 @@ use crate::{
 #[turbo_tasks::value]
 pub struct AppProject {
     project: ResolvedVc<Project>,
-    app_dir: ResolvedFileSystemPath,
+    app_dir: FileSystemPath,
 }
 
 #[turbo_tasks::value(transparent)]
@@ -135,7 +135,7 @@ fn module_styles_rule_condition() -> RuleCondition {
 #[turbo_tasks::value_impl]
 impl AppProject {
     #[turbo_tasks::function]
-    pub fn new(project: ResolvedVc<Project>, app_dir: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(project: ResolvedVc<Project>, app_dir: FileSystemPath) -> Vc<Self> {
         AppProject { project, app_dir }.cell()
     }
 
@@ -1048,7 +1048,7 @@ enum AppEndpointType {
         loader_tree: ResolvedVc<AppPageLoaderTree>,
     },
     Route {
-        path: ResolvedFileSystemPath,
+        path: FileSystemPath,
         root_layouts: ResolvedVc<FileSystemPathVec>,
     },
     Metadata {
