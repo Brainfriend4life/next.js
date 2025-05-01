@@ -41,31 +41,31 @@ impl AttachedFileSystem {
     #[turbo_tasks::function]
     pub async fn convert_path(
         self: ResolvedVc<Self>,
-        contained_path_vc: FileSystemPath,
-    ) -> Result<FileSystemPath> {
+        contained_path: FileSystemPath,
+    ) -> Result<Vc<FileSystemPath>> {
         let self_fs: ResolvedVc<Box<dyn FileSystem>> = ResolvedVc::upcast(self);
         let this = self.await?;
 
         match contained_path.fs {
             // already on this filesystem
-            fs if fs == self_fs => Ok(contained_path_vc),
+            fs if fs == self_fs => Ok(contained_path.cell()),
             // in the root filesystem, just need to rebase on this filesystem
             fs if fs == this.root_fs => Ok(self
                 .root()
                 .resolve()
                 .await?
                 .await?
-                .join(contained_path.path.clone())),
+                .join(contained_path.path.clone())?
+                .cell()),
             // in the child filesystem, so we expand to the full path by appending to child_path
             fs if fs == this.child_fs => Ok(self
                 .child_path()
-                .resolve()
                 .await?
-                .await?
-                .join(contained_path.path.clone())),
+                .join(contained_path.path.clone())?
+                .cell()),
             _ => bail!(
                 "path {} not part of self, the root fs or the child fs",
-                contained_path_vc.to_string().await?
+                contained_path.to_string()
             ),
         }
     }
@@ -73,12 +73,14 @@ impl AttachedFileSystem {
     /// Constructs a [FileSystemPath] of the attachment point referencing
     /// this [AttachedFileSystem]
     #[turbo_tasks::function]
-    async fn child_path(self: Vc<Self>) -> Result<FileSystemPath> {
+    async fn child_path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
         Ok(self
             .root()
             .resolve()
             .await?
-            .join(self.await?.child_path.clone()))
+            .await?
+            .join(self.await?.child_path.clone())?
+            .cell())
     }
 
     /// Resolves the local path of the root or child filesystem from a path
@@ -87,7 +89,7 @@ impl AttachedFileSystem {
     pub async fn get_inner_fs_path(
         self: ResolvedVc<Self>,
         path: FileSystemPath,
-    ) -> Result<FileSystemPath> {
+    ) -> Result<Vc<FileSystemPath>> {
         let this = self.await?;
         let self_fs: ResolvedVc<Box<dyn FileSystem>> = ResolvedVc::upcast(self);
 
@@ -102,21 +104,24 @@ impl AttachedFileSystem {
         }
 
         let child_path = self.child_path();
-        Ok(if let Some(inner_path) = child_path.get_path_to(&path) {
-            this.child_fs
-                .root()
-                .resolve()
-                .await?
-                .await?
-                .join(inner_path.into())?
-        } else {
-            this.root_fs
-                .root()
-                .resolve()
-                .await?
-                .await?
-                .join(path.path.clone())?
-        })
+        Ok(
+            if let Some(inner_path) = child_path.await?.get_path_to(&path) {
+                this.child_fs
+                    .root()
+                    .resolve()
+                    .await?
+                    .await?
+                    .join(inner_path.into())?
+            } else {
+                this.root_fs
+                    .root()
+                    .resolve()
+                    .await?
+                    .await?
+                    .join(path.path.clone())?
+            }
+            .cell(),
+        )
     }
 }
 
