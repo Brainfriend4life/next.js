@@ -1466,13 +1466,17 @@ impl FileSystemPath {
     }
 }
 
+#[turbo_tasks::value_impl]
 impl FileSystemPath {
     /// Reads content of a directory.
     ///
     /// DETERMINISM: Result is in random order. Either sort result or do not
     /// depend on the order.
-    pub async fn read_dir(&self) -> Result<Vc<DirectoryContent>> {
-        match &*self.fs.raw_read_dir(self).await? {
+    #[turbo_tasks::function]
+    pub async fn read_dir(self: Vc<Self>) -> Result<Vc<DirectoryContent>> {
+        let this = self.await?;
+
+        match &*this.fs.raw_read_dir(this).await? {
             RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
             RawDirectoryContent::Entries(entries) => {
                 let mut normalized_entries = AutoMap::new();
@@ -1498,19 +1502,19 @@ impl FileSystemPath {
             }
         }
     }
+}
 
-    #[turbo_tasks::function]
-    pub async fn parent(self: Vc<Self>) -> Result<FileSystemPath> {
-        let this = self.await?;
-        let path = &this.path;
+impl FileSystemPath {
+    pub fn parent(&self) -> Result<FileSystemPath> {
+        let path = &self.path;
         if path.is_empty() {
-            return Ok(self);
+            return Ok(self.clone());
         }
         let p = match str::rfind(path, '/') {
             Some(index) => path[..index].to_string(),
             None => "".to_string(),
         };
-        Ok(FileSystemPath::new_normalized(*this.fs, p.into()))
+        Ok(FileSystemPath::new_normalized(self.fs, p.into()))
     }
 
     #[turbo_tasks::function]
