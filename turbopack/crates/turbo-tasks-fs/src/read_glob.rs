@@ -28,7 +28,7 @@ pub async fn read_glob(
 #[turbo_tasks::function(fs)]
 async fn read_glob_inner(
     prefix: RcStr,
-    directory: Vc<FileSystemPath>,
+    directory: FileSystemPath,
     glob: Vc<Glob>,
     include_dot_files: bool,
 ) -> Result<Vc<ReadGlobResult>> {
@@ -37,7 +37,7 @@ async fn read_glob_inner(
 
 async fn read_glob_internal(
     prefix: &str,
-    directory: Vc<FileSystemPath>,
+    directory: FileSystemPath,
     glob: Vc<Glob>,
     include_dot_files: bool,
 ) -> Result<ResolvedVc<ReadGlobResult>> {
@@ -63,7 +63,7 @@ async fn read_glob_internal(
                         if glob_value.execute(&full_path_prefix) {
                             result.inner.insert(
                                 full_path,
-                                read_glob_inner(full_path_prefix, *path, glob, include_dot_files)
+                                read_glob_inner(full_path_prefix, path, glob, include_dot_files)
                                     .to_resolved()
                                     .await?,
                             );
