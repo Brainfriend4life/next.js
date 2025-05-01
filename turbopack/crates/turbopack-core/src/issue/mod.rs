@@ -551,7 +551,7 @@ impl IssueSource {
     }
 
     /// Returns the file path for the source file.
-    pub fn file_path(&self) -> FileSystemPath {
+    pub fn file_path(&self) -> Vc<FileSystemPath> {
         self.source.ident().path()
     }
 }
