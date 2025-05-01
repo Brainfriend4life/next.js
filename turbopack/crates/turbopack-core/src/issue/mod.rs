@@ -109,7 +109,7 @@ pub trait Issue {
 
     /// The file path that generated the issue, displayed to the user as message
     /// header.
-    fn file_path(self: Vc<Self>) -> FileSystemPath;
+    fn file_path(self: Vc<Self>) -> Vc<FileSystemPath>;
 
     /// The stage of the compilation process at which the issue occurred. This
     /// is used to sort issues.
