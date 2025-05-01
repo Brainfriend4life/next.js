@@ -1203,13 +1203,11 @@ impl FileSystemPathOption {
     }
 }
 
-#[turbo_tasks::value_impl]
 impl FileSystemPath {
     /// Create a new FileSystemPath from a path withing a FileSystem. The
     /// /-separated path is expected to be already normalized (this is asserted
     /// in dev mode).
-    #[turbo_tasks::function]
-    fn new_normalized(fs: ResolvedVc<Box<dyn FileSystem>>, path: RcStr) -> Vc<Self> {
+    fn new_normalized(fs: ResolvedVc<Box<dyn FileSystem>>, path: RcStr) -> Self {
         // On Windows, the path must be converted to a unix path before creating. But on
         // Unix, backslashes are a valid char in file names, and the path can be
         // provided by the user, so we allow it.
@@ -1223,7 +1221,7 @@ impl FileSystemPath {
             "path {} must be normalized",
             path,
         );
-        Self::cell(FileSystemPath { fs, path })
+        FileSystemPath { fs, path }
     }
 
     /// Adds a subpath to the current path. The /-separate path argument might
@@ -1495,15 +1493,13 @@ impl FileSystemPath {
     }
 }
 
-#[turbo_tasks::value_impl]
 impl FileSystemPath {
     /// Reads content of a directory.
     ///
     /// DETERMINISM: Result is in random order. Either sort result or do not
     /// depend on the order.
-    #[turbo_tasks::function]
-    pub async fn read_dir(self: Vc<Self>) -> Result<Vc<DirectoryContent>> {
-        match &*self.await?.fs.raw_read_dir(self).await? {
+    pub async fn read_dir(&self) -> Result<Vc<DirectoryContent>> {
+        match &*self.fs.raw_read_dir(self).await? {
             RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
             RawDirectoryContent::Entries(entries) => {
                 let mut normalized_entries = AutoMap::new();
