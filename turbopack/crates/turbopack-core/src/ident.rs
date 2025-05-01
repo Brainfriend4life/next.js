@@ -190,8 +190,8 @@ impl AssetIdent {
     }
 
     #[turbo_tasks::function]
-    pub fn path(&self) -> FileSystemPath {
-        *self.path
+    pub fn path(&self) -> Vc<FileSystemPath> {
+        self.path.clone().cell()
     }
 
     #[turbo_tasks::function]
