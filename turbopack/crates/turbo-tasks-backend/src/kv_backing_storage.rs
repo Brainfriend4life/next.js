@@ -784,7 +784,7 @@ fn save_strings_concurrent<'a>(
     Ok(LocalIdToGlobalId::from(global_ids))
 }
 
-static ID: OnceLock<AtomicU32> = OnceLock::new();
+static STRING_INTERN_ID: OnceLock<AtomicU32> = OnceLock::new();
 
 /// Returns `(global_id, is_new)`
 fn get_string_id<'a>(batch: &impl BaseWriteBatch<'a>, s: &RcStr) -> Result<(u32, bool)> {
@@ -801,7 +801,7 @@ fn get_string_id<'a>(batch: &impl BaseWriteBatch<'a>, s: &RcStr) -> Result<(u32,
 
     let latest_id = as_u32(bytes)?;
 
-    let global_id = ID
+    let global_id = STRING_INTERN_ID
         .get_or_init(|| AtomicU32::new(latest_id))
         .fetch_add(1, Ordering::Relaxed);
 
