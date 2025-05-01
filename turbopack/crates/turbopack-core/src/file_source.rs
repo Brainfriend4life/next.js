@@ -33,7 +33,7 @@ impl FileSource {
         query: ResolvedVc<RcStr>,
     ) -> Result<Vc<Self>> {
         if query.await?.is_empty() {
-            Ok(Self::new(*path))
+            Ok(Self::new(path))
         } else {
             Ok(Self::cell(FileSource { path, query }))
         }
@@ -44,7 +44,7 @@ impl FileSource {
 impl Source for FileSource {
     #[turbo_tasks::function]
     fn ident(&self) -> Vc<AssetIdent> {
-        AssetIdent::from_path(*self.path).with_query(*self.query)
+        AssetIdent::from_path(self.path.clone()).with_query(*self.query)
     }
 }
 
