@@ -50,7 +50,7 @@ async fn read_glob_internal(
                 if !include_dot_files && segment.starts_with('.') {
                     continue;
                 }
-                let entry = entry.resolve_symlink().await?;
+                let entry = entry.clone().resolve_symlink().await?;
                 match entry {
                     DirectoryEntry::Directory(path) => {
                         let full_path = format!("{prefix}{segment}");
