@@ -197,7 +197,7 @@ fn create_semaphore() -> tokio::sync::Semaphore {
 #[turbo_tasks::value_trait]
 pub trait FileSystem: ValueToString {
     /// Returns the path to the root of the file system.
-    fn root(self: Vc<Self>) -> Vc<FileSystemPath> {
+    fn root(self: ResolvedVc<Self>) -> Vc<FileSystemPath> {
         FileSystemPath::new_normalized(self, RcStr::default()).cell()
     }
     fn read(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<FileContent>;
@@ -2552,9 +2552,7 @@ mod tests {
             }
 
             // does not change the path (returns exact same Vc) if the file name is short
-            let path = FileSystemPath::new_normalized(fs, format!("{long_str}/short.ext").into())
-                .resolve()
-                .await?;
+            let path = FileSystemPath::new_normalized(fs, format!("{long_str}/short.ext").into());
             assert_eq!(
                 path.truncate_file_name_with_hash_vc().resolve().await?,
                 path,
