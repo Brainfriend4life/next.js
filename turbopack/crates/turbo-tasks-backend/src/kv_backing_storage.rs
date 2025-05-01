@@ -539,7 +539,10 @@ where
             tracing::trace_span!("update operations", operations = operations.len()).entered();
         let (mut operations, rcstr_map) = pot_serialize_small_vec(&operations)
             .with_context(|| anyhow!("Unable to serialize operations"))?;
-        let global_ids = save_strings(batch, &rcstr_map)?;
+        let global_ids = match batch {
+            WriteBatchRef::Serial(_) => save_strings_serial(batch, &rcstr_map)?,
+            WriteBatchRef::Concurrent(batch, _) => save_strings_concurrent(&**batch, &rcstr_map)?,
+        };
         // Prepend the global ids to the operations
         let mut final_operations = SmallVec::<[u8; 16]>::new();
         global_ids.write_to(&mut final_operations)?;
@@ -702,26 +705,10 @@ fn serialize(
 }
 
 /// Store the strings in the database and return the global ids.
-fn save_strings<'a, S, C>(
-    batch: &mut WriteBatchRef<'_, 'a, S, C>,
+fn save_strings_serial<'a>(
+    batch: &mut impl SerialWriteBatch<'a>,
     strings: &RcStrToLocalId,
-) -> Result<LocalIdToGlobalId>
-where
-    S: SerialWriteBatch<'a>,
-    C: ConcurrentWriteBatch<'a>,
-{
-    fn next_string_id<'a, S, C>(batch: &mut WriteBatchRef<'_, 'a, S, C>) -> Result<u32>
-    where
-        S: SerialWriteBatch<'a>,
-        C: ConcurrentWriteBatch<'a>,
-    {
-        let Some(bytes) = batch.get(KeySpace::Infra, IntKey::new(META_KEY_STRING_ID).as_ref())?
-        else {
-            return Ok(0);
-        };
-        as_u32(bytes)
-    }
-
+) -> Result<LocalIdToGlobalId> {
     let mut global_ids = Vec::new();
     for (local_id, s) in strings.0.iter().enumerate() {
         let global_id = next_string_id(batch)?;
@@ -739,4 +726,34 @@ where
     }
 
     Ok(LocalIdToGlobalId::from(global_ids))
+}
+/// Store the strings in the database and return the global ids.
+fn save_strings_concurrent<'a>(
+    batch: &impl ConcurrentWriteBatch<'a>,
+    strings: &RcStrToLocalId,
+) -> Result<LocalIdToGlobalId> {
+    let mut global_ids = Vec::new();
+    for (local_id, s) in strings.0.iter().enumerate() {
+        let global_id = next_string_id(batch)?;
+        global_ids.push(global_id);
+        batch.put(
+            KeySpace::StringInternMap,
+            WriteBuffer::Borrowed(s.as_bytes()),
+            WriteBuffer::Borrowed(&global_id.to_le_bytes()),
+        )?;
+        batch.put(
+            KeySpace::ReverseStringInternMap,
+            WriteBuffer::Borrowed(IntKey::new(global_id).as_ref()),
+            WriteBuffer::Borrowed(&local_id.to_le_bytes()),
+        )?;
+    }
+
+    Ok(LocalIdToGlobalId::from(global_ids))
+}
+
+fn next_string_id<'a>(batch: &impl BaseWriteBatch<'a>) -> Result<u32> {
+    let Some(bytes) = batch.get(KeySpace::Infra, IntKey::new(META_KEY_STRING_ID).as_ref())? else {
+        return Ok(0);
+    };
+    as_u32(bytes)
 }
