@@ -730,19 +730,22 @@ fn save_strings_serial<'a>(
     strings: &RcStrToLocalId,
 ) -> Result<LocalIdToGlobalId> {
     let mut global_ids = Vec::new();
-    for (local_id, s) in strings.0.iter().enumerate() {
-        let global_id = next_string_id(batch)?;
+    for s in strings.0.iter() {
+        let (global_id, is_new) = get_string_id(batch, s)?;
+        if is_new {
+            batch.put(
+                KeySpace::StringInternMap,
+                WriteBuffer::Borrowed(s.as_bytes()),
+                WriteBuffer::Borrowed(&global_id.to_le_bytes()),
+            )?;
+            batch.put(
+                KeySpace::ReverseStringInternMap,
+                WriteBuffer::Borrowed(IntKey::new(global_id).as_ref()),
+                WriteBuffer::Borrowed(s.as_bytes()),
+            )?;
+        }
+
         global_ids.push(global_id);
-        batch.put(
-            KeySpace::StringInternMap,
-            WriteBuffer::Borrowed(s.as_bytes()),
-            WriteBuffer::Borrowed(&global_id.to_le_bytes()),
-        )?;
-        batch.put(
-            KeySpace::ReverseStringInternMap,
-            WriteBuffer::Borrowed(IntKey::new(global_id).as_ref()),
-            WriteBuffer::Borrowed(&local_id.to_le_bytes()),
-        )?;
     }
 
     Ok(LocalIdToGlobalId::from(global_ids))
@@ -753,27 +756,41 @@ fn save_strings_concurrent<'a>(
     strings: &RcStrToLocalId,
 ) -> Result<LocalIdToGlobalId> {
     let mut global_ids = Vec::new();
-    for (local_id, s) in strings.0.iter().enumerate() {
-        let global_id = next_string_id(batch)?;
+    for s in strings.0.iter() {
+        let (global_id, is_new) = get_string_id(batch, s)?;
+        if is_new {
+            batch.put(
+                KeySpace::StringInternMap,
+                WriteBuffer::Borrowed(s.as_bytes()),
+                WriteBuffer::Borrowed(&global_id.to_le_bytes()),
+            )?;
+            batch.put(
+                KeySpace::ReverseStringInternMap,
+                WriteBuffer::Borrowed(IntKey::new(global_id).as_ref()),
+                WriteBuffer::Borrowed(s.as_bytes()),
+            )?;
+        }
+
         global_ids.push(global_id);
-        batch.put(
-            KeySpace::StringInternMap,
-            WriteBuffer::Borrowed(s.as_bytes()),
-            WriteBuffer::Borrowed(&global_id.to_le_bytes()),
-        )?;
-        batch.put(
-            KeySpace::ReverseStringInternMap,
-            WriteBuffer::Borrowed(IntKey::new(global_id).as_ref()),
-            WriteBuffer::Borrowed(&local_id.to_le_bytes()),
-        )?;
     }
 
     Ok(LocalIdToGlobalId::from(global_ids))
 }
 
-fn next_string_id<'a>(batch: &impl BaseWriteBatch<'a>) -> Result<u32> {
+/// Returns `(global_id, is_new)`
+fn get_string_id<'a>(batch: &impl BaseWriteBatch<'a>, s: &RcStr) -> Result<(u32, bool)> {
+    let original = batch.get(KeySpace::StringInternMap, s.as_bytes())?;
+
+    if let Some(bytes) = original {
+        let global_id = as_u32(bytes)?;
+        return Ok((global_id, false));
+    }
+
     let Some(bytes) = batch.get(KeySpace::Infra, IntKey::new(META_KEY_STRING_ID).as_ref())? else {
-        return Ok(0);
+        return Ok((0, true));
     };
-    as_u32(bytes)
+
+    let global_id = as_u32(bytes)?;
+
+    Ok((global_id, true))
 }
