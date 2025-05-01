@@ -1363,7 +1363,7 @@ pub async fn find_context_file_or_package_key(
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TraceRawVcs, Debug, NonLocalValue)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TraceRawVcs, Debug, NonLocalValue)]
 enum FindPackageItem {
     PackageDirectory(FileSystemPath),
     PackageFile(FileSystemPath),
@@ -1569,8 +1569,8 @@ pub async fn resolve_inline(
     options: Vc<ResolveOptions>,
 ) -> Result<Vc<ResolveResult>> {
     let span = {
-        let lookup_path = lookup_path.to_string().await?.to_string();
-        let request = request.to_string().await?.to_string();
+        let lookup_path = lookup_path.to_string();
+        let request = request.to_string();
         tracing::info_span!(
             "resolving",
             lookup_path = lookup_path,
@@ -2290,7 +2290,7 @@ async fn resolve_relative_request(
                             results.push(
                                 resolved(
                                     RequestKey::new(matched_pattern.into()),
-                                    **path,
+                                    path,
                                     lookup_path,
                                     request,
                                     options_value,
@@ -2307,7 +2307,7 @@ async fn resolve_relative_request(
                         results.push(
                             resolved(
                                 RequestKey::new(matched_pattern.into()),
-                                **path,
+                                path,
                                 lookup_path,
                                 request,
                                 options_value,
@@ -2330,7 +2330,7 @@ async fn resolve_relative_request(
                     results.push(
                         resolved(
                             RequestKey::new(matched_pattern.into()),
-                            **path,
+                            path,
                             lookup_path,
                             request,
                             options_value,
@@ -2542,7 +2542,7 @@ async fn resolve_module_request(
         if name == module {
             let result = resolve_into_package(
                 Value::new(path.clone()),
-                **package_path,
+                package_path,
                 query,
                 fragment,
                 options,
@@ -2859,7 +2859,7 @@ async fn resolved(
     Ok(*ResolveResult::source_with_affecting_sources(
         request_key,
         ResolvedVc::upcast(
-            FileSource::new_with_query(**path, query)
+            FileSource::new_with_query(path.clone(), query)
                 .to_resolved()
                 .await?,
         ),
@@ -2867,7 +2867,7 @@ async fn resolved(
             .iter()
             .map(|symlink| async move {
                 anyhow::Ok(ResolvedVc::upcast(
-                    FileSource::new(**symlink).to_resolved().await?,
+                    FileSource::new(symlink.clone()).to_resolved().await?,
                 ))
             })
             .try_join()
