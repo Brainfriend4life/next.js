@@ -656,7 +656,7 @@ impl FileSystem for DiskFileSystem {
             let target_string: RcStr = relative_to_root_path.to_string_lossy().into();
             (
                 target_string.clone(),
-                FileSystemPath::new_normalized(fs_path.fs, target_string)
+                FileSystemPath::new_normalized(fs_path.fs, target_string)?
                     .get_type()
                     .await?,
             )
@@ -665,7 +665,7 @@ impl FileSystem for DiskFileSystem {
             let link_path_unix: RcStr = sys_to_unix(&link_path_string_cow).into();
             (
                 link_path_unix.clone(),
-                fs_path.parent().join(link_path_unix).get_type().await?,
+                fs_path.parent().join(link_path_unix)?.get_type().await?,
             )
         };
 
@@ -1501,7 +1501,6 @@ impl FileSystemPath {
         FileSystemPath::new_normalized(self.fs, p.into())
     }
 
-    #[turbo_tasks::function]
     // It is important that get_type uses read_dir and not stat/metadata.
     // - `get_type` is called very very often during resolving and stat would
     // make it 1 syscall per call, whereas read_dir would make it 1 syscall per
@@ -1510,25 +1509,8 @@ impl FileSystemPath {
     // case-insenstive filesystems, while read_dir gives you the "correct"
     // casing. We want to enforce "correct" casing to avoid broken builds on
     // Vercel deployments (case-sensitive).
-    pub fn get_type(&self) -> Result<Vc<FileSystemEntryType>> {
-        if self.is_root() {
-            return Ok(FileSystemEntryType::cell(FileSystemEntryType::Directory));
-        }
-        let parent = self.parent()?;
-        let dir_content = parent.raw_read_dir()?;
-        match &*dir_content {
-            RawDirectoryContent::NotFound => {
-                Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
-            }
-            RawDirectoryContent::Entries(entries) => {
-                let (_, file_name) = self.split_file_name();
-                if let Some(entry) = entries.get(file_name) {
-                    Ok(FileSystemEntryType::cell(entry.into()))
-                } else {
-                    Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
-                }
-            }
-        }
+    pub fn get_type(&self) -> Vc<FileSystemEntryType> {
+        get_type(self.clone())
     }
 
     #[turbo_tasks::function]
@@ -1612,6 +1594,28 @@ impl FileSystemPath {
             symlinks: symlinks.into_iter().collect(),
         }
         .cell())
+    }
+}
+
+#[turbo_tasks::function]
+async fn get_type(path: FileSystemPath) -> Result<Vc<FileSystemEntryType>> {
+    if path.is_root() {
+        return Ok(FileSystemEntryType::cell(FileSystemEntryType::Directory));
+    }
+    let parent = path.parent();
+    let dir_content = parent.raw_read_dir()?;
+    match &*dir_content {
+        RawDirectoryContent::NotFound => {
+            Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
+        }
+        RawDirectoryContent::Entries(entries) => {
+            let (_, file_name) = path.split_file_name();
+            if let Some(entry) = entries.get(file_name) {
+                Ok(FileSystemEntryType::cell(entry.into()))
+            } else {
+                Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
+            }
+        }
     }
 }
 
@@ -2466,7 +2470,7 @@ mod tests {
         crate::register();
 
         turbo_tasks_testing::VcStorage::with(async {
-            let fs = Vc::upcast(VirtualFileSystem::new()).to_resolved().await?;
+            let fs = ResolvedVc::upcast(VirtualFileSystem::new().to_resolved().await?);
 
             let path_txt = FileSystemPath::new_normalized(fs, "foo/bar.txt".into());
 
