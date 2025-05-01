@@ -2428,7 +2428,7 @@ impl ValueToString for NullFileSystem {
 pub async fn to_sys_path(mut path: FileSystemPath) -> Result<Option<PathBuf>> {
     loop {
         if let Some(fs) = Vc::try_resolve_downcast_type::<AttachedFileSystem>(path.fs()).await? {
-            path = fs.get_inner_fs_path(path);
+            path = (*fs.get_inner_fs_path(path).await?).clone();
             continue;
         }
 
