@@ -1227,97 +1227,80 @@ impl FileSystemPath {
     /// Adds a subpath to the current path. The /-separate path argument might
     /// contain ".." or "." seqments, but it must not leave the root of the
     /// filesystem.
-    #[turbo_tasks::function]
-    pub async fn join(self: Vc<Self>, path: RcStr) -> Result<Vc<Self>> {
-        let this = self.await?;
-        if let Some(path) = join_path(&this.path, &path) {
-            Ok(Self::new_normalized(*this.fs, path.into()))
+    pub fn join(&self, path: RcStr) -> Result<Self> {
+        if let Some(path) = join_path(&self.path, &path) {
+            Ok(Self::new_normalized(self.fs, path.into()))
         } else {
             bail!(
                 "FileSystemPath(\"{}\").join(\"{}\") leaves the filesystem root",
-                this.path,
+                self.path,
                 path
             );
         }
     }
 
     /// Adds a suffix to the filename. [path] must not contain `/`.
-    #[turbo_tasks::function]
-    pub async fn append(self: Vc<Self>, path: RcStr) -> Result<Vc<Self>> {
-        let this = self.await?;
+    pub fn append(&self, path: RcStr) -> Result<Self> {
         if path.contains('/') {
             bail!(
                 "FileSystemPath(\"{}\").append(\"{}\") must not append '/'",
-                this.path,
+                self.path,
                 path
             )
         }
         Ok(Self::new_normalized(
-            *this.fs,
-            format!("{}{}", this.path, path).into(),
+            self.fs,
+            format!("{}{}", self.path, path).into(),
         ))
     }
 
     /// Adds a suffix to the basename of the filename. [appending] must not
     /// contain `/`. Extension will stay intact.
-    #[turbo_tasks::function]
-    pub async fn append_to_stem(self: Vc<Self>, appending: RcStr) -> Result<Vc<Self>> {
-        let this = self.await?;
+    pub fn append_to_stem(&self, appending: RcStr) -> Result<Self> {
         if appending.contains('/') {
             bail!(
                 "FileSystemPath(\"{}\").append_to_stem(\"{}\") must not append '/'",
-                this.path,
+                self.path,
                 appending
             )
         }
-        if let (path, Some(ext)) = this.split_extension() {
+        if let (path, Some(ext)) = self.split_extension() {
             return Ok(Self::new_normalized(
-                *this.fs,
+                self.fs,
                 format!("{}{}.{}", path, appending, ext).into(),
             ));
         }
         Ok(Self::new_normalized(
-            *this.fs,
-            format!("{}{}", this.path, appending).into(),
+            self.fs,
+            format!("{}{}", self.path, appending).into(),
         ))
     }
 
     /// Similar to [FileSystemPath::join], but returns an Option that will be
     /// None when the joined path would leave the filesystem root.
-    #[turbo_tasks::function]
-    pub async fn try_join(&self, path: RcStr) -> Result<Vc<FileSystemPathOption>> {
+    pub fn try_join(&self, path: RcStr) -> Result<Option<Self>> {
         // TODO(PACK-3279): Remove this once we do not produce invalid paths at the first place.
         #[cfg(target_os = "windows")]
         let path = path.replace('\\', "/");
 
         if let Some(path) = join_path(&self.path, &path) {
-            Ok(Vc::cell(Some(
-                Self::new_normalized(*self.fs, path.into())
-                    .to_resolved()
-                    .await?,
-            )))
+            Ok(Some(Self::new_normalized(self.fs, path.into())))
         } else {
-            Ok(FileSystemPathOption::none())
+            Ok(None)
         }
     }
 
     /// Similar to [FileSystemPath::join], but returns an Option that will be
     /// None when the joined path would leave the current path.
-    #[turbo_tasks::function]
-    pub async fn try_join_inside(&self, path: RcStr) -> Result<Vc<FileSystemPathOption>> {
+    pub fn try_join_inside(&self, path: RcStr) -> Result<Option<Self>> {
         if let Some(path) = join_path(&self.path, &path) {
             if path.starts_with(&*self.path) {
-                return Ok(Vc::cell(Some(
-                    Self::new_normalized(*self.fs, path.into())
-                        .to_resolved()
-                        .await?,
-                )));
+                return Ok(Some(Self::new_normalized(self.fs, path.into())));
             }
         }
-        Ok(FileSystemPathOption::none())
+        Ok(None)
     }
 
-    #[turbo_tasks::function]
     pub fn read_glob(
         self: Vc<Self>,
         glob: Vc<Glob>,
@@ -1406,10 +1389,7 @@ pub async fn rebase(
     fs_path: FileSystemPath,
     old_base: FileSystemPath,
     new_base: FileSystemPath,
-) -> Result<FileSystemPath> {
-    let fs_path = &*fs_path.await?;
-    let old_base = &*old_base.await?;
-    let new_base = &*new_base.await?;
+) -> Result<Vc<FileSystemPath>> {
     let new_path;
     if old_base.path.is_empty() {
         if new_base.path.is_empty() {
@@ -1440,8 +1420,8 @@ pub async fn rebase(
 
 // Not turbo-tasks functions, only delegating
 impl FileSystemPath {
-    pub fn read(self: Vc<Self>) -> Vc<FileContent> {
-        self.fs().read(self)
+    pub fn read(&self) -> Vc<FileContent> {
+        self.fs.read(self)
     }
 
     pub fn read_link(self: Vc<Self>) -> Vc<LinkContent> {
