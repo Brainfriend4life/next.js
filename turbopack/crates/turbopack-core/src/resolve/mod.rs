@@ -1284,12 +1284,12 @@ pub async fn find_context_file(
 ) -> Result<Vc<FindContextFileResult>> {
     let mut refs = Vec::new();
     for name in &*names.await? {
-        let fs_path = lookup_path.join(name.clone());
+        let fs_path = lookup_path.join(name.clone())?;
         if let Some(fs_path) = exists(fs_path, &mut refs).await? {
             return Ok(FindContextFileResult::Found(fs_path, refs).cell());
         }
     }
-    if lookup_path.await?.is_root() {
+    if lookup_path.is_root() {
         return Ok(FindContextFileResult::NotFound(refs).cell());
     }
     if refs.is_empty() {
@@ -1297,15 +1297,15 @@ pub async fn find_context_file(
         Ok(find_context_file(
             // Hot codepath optimization: resolve all arguments to avoid an automatically-created
             // intermediate task
-            lookup_path.parent().resolve().await?,
+            lookup_path.parent(),
             names,
         ))
     } else {
-        let parent_result = find_context_file(lookup_path.parent().resolve().await?, names).await?;
+        let parent_result = find_context_file(lookup_path.parent(), names).await?;
         Ok(match &*parent_result {
             FindContextFileResult::Found(p, r) => {
                 refs.extend(r.iter().copied());
-                FindContextFileResult::Found(*p, refs)
+                FindContextFileResult::Found(p.clone(), refs)
             }
             FindContextFileResult::NotFound(r) => {
                 refs.extend(r.iter().copied());
@@ -1324,21 +1324,21 @@ pub async fn find_context_file_or_package_key(
     package_key: Value<RcStr>,
 ) -> Result<Vc<FindContextFileResult>> {
     let mut refs = Vec::new();
-    let package_json_path = lookup_path.join("package.json".into());
+    let package_json_path = lookup_path.join("package.json".into())?;
     if let Some(package_json_path) = exists(package_json_path, &mut refs).await? {
-        if let Some(json) = &*read_package_json(*package_json_path).await? {
+        if let Some(json) = &*read_package_json(package_json_path.clone()).await? {
             if json.get(&**package_key).is_some() {
                 return Ok(FindContextFileResult::Found(package_json_path, refs).into());
             }
         }
     }
     for name in &*names.await? {
-        let fs_path = lookup_path.join(name.clone());
+        let fs_path = lookup_path.join(name.clone())?;
         if let Some(fs_path) = exists(fs_path, &mut refs).await? {
             return Ok(FindContextFileResult::Found(fs_path, refs).into());
         }
     }
-    if lookup_path.await?.is_root() {
+    if lookup_path.is_root() {
         return Ok(FindContextFileResult::NotFound(refs).into());
     }
     if refs.is_empty() {
