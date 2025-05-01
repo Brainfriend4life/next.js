@@ -4,7 +4,7 @@
 //! their size and eliminating duplicates between them.
 
 use anyhow::Result;
-use turbo_tasks::{ResolvedVc, TryJoinIterExt, Vc};
+use turbo_tasks::{TryJoinIterExt, Vc};
 use turbo_tasks_fs::{FileSystemPath, FileSystemPathOption};
 
 use crate::chunk::containment_tree::{ContainmentTree, ContainmentTreeKey};
@@ -13,15 +13,15 @@ use crate::chunk::containment_tree::{ContainmentTree, ContainmentTreeKey};
 struct FileSystemPathKey(FileSystemPath);
 
 impl FileSystemPathKey {
-    async fn new(path: FileSystemPath) -> Result<Self> {
-        Ok(Self(path.to_resolved().await?))
+    fn new(path: FileSystemPath) -> Self {
+        Self(path)
     }
 }
 
 #[async_trait::async_trait]
 impl ContainmentTreeKey for FileSystemPathKey {
     async fn parent(&self) -> Result<Self> {
-        Ok(FileSystemPathKey::new(self.0.parent()).await?)
+        Ok(FileSystemPathKey::new(self.0.parent()))
     }
 }
 
@@ -45,7 +45,7 @@ where
 
                     Ok((
                         if let Some(common_parent) = &*common_parent {
-                            Some(FileSystemPathKey::new(**common_parent).await?)
+                            Some(FileSystemPathKey::new(common_parent.clone()))
                         } else {
                             None
                         },
