@@ -42,11 +42,8 @@ impl AssetIdent {
 
     pub async fn rename_as_ref(&mut self, pattern: &str) -> Result<()> {
         let root = self.path.root();
-        let path = self.path.await?;
-        self.path = root
-            .join(pattern.replace('*', &path.path).into())
-            .to_resolved()
-            .await?;
+        let path = &self.path;
+        self.path = root.await?.join(pattern.replace('*', &path.path).into())?;
         Ok(())
     }
 }
@@ -55,7 +52,7 @@ impl AssetIdent {
 impl ValueToString for AssetIdent {
     #[turbo_tasks::function]
     async fn to_string(&self) -> Result<Vc<RcStr>> {
-        let mut s = self.path.to_string().owned().await?.into_owned();
+        let mut s = self.path.to_string();
 
         let query = self.query.await?;
         if !query.is_empty() {
@@ -213,11 +210,11 @@ impl AssetIdent {
         // to be compatible with all operating systems + URLs.
 
         // For clippy -- This explicit deref is necessary
-        let path = &*self.path.await?;
-        let mut name = if let Some(inner) = context_path.await?.get_path_to(path) {
+        let path = &self.path;
+        let mut name = if let Some(inner) = context_path.get_path_to(path) {
             clean_separators(inner)
         } else {
-            clean_separators(&self.path.to_string().await?)
+            clean_separators(&self.path.to_string())
         };
         let removed_extension = name.ends_with(&*expected_extension);
         if removed_extension {
