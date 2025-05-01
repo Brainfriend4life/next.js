@@ -665,7 +665,7 @@ impl FileSystem for DiskFileSystem {
             let link_path_unix: RcStr = sys_to_unix(&link_path_string_cow).into();
             (
                 link_path_unix.clone(),
-                fs_path.parent()?.join(link_path_unix).get_type().await?,
+                fs_path.parent().join(link_path_unix).get_type().await?,
             )
         };
 
@@ -1493,16 +1493,16 @@ async fn read_dir(path: FileSystemPath) -> Result<Vc<DirectoryContent>> {
 }
 
 impl FileSystemPath {
-    pub fn parent(&self) -> Result<FileSystemPath> {
+    pub fn parent(&self) -> FileSystemPath {
         let path = &self.path;
         if path.is_empty() {
-            return Ok(self.clone());
+            return self.clone();
         }
         let p = match str::rfind(path, '/') {
             Some(index) => path[..index].to_string(),
             None => "".to_string(),
         };
-        Ok(FileSystemPath::new_normalized(self.fs, p.into()))
+        FileSystemPath::new_normalized(self.fs, p.into())
     }
 
     #[turbo_tasks::function]
