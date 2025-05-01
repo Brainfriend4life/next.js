@@ -68,7 +68,7 @@ impl SourceMapAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for SourceMapAsset {
     #[turbo_tasks::function]
-    async fn path(self: Vc<Self>) -> Result<FileSystemPath> {
+    async fn path(self: Vc<Self>) -> Result<Vc<FileSystemPath>> {
         // NOTE(alexkirsz) We used to include the asset's version id in the path,
         // but this caused `all_assets_map` to be recomputed on every change.
         let this = self.await?;
