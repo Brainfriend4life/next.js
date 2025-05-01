@@ -132,7 +132,6 @@ define_id!(
     doc = "An identifier for a specific task execution. Used to assert that local `Vc`s don't \
         leak. This value may overflow and re-use old values.",
 );
-define_id!(StringId: u32, derive(Debug, Serialize, Deserialize), serde(transparent));
 
 impl Debug for TaskId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
