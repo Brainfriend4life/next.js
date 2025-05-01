@@ -1509,10 +1509,7 @@ pub async fn read_matches(
                 if let Some(pos) = pat.match_position(&prefix) {
                     results.push((
                         pos,
-                        PatternMatch::Directory(
-                            prefix.clone().into(),
-                            lookup_dir.parent().to_resolved().await?,
-                        ),
+                        PatternMatch::Directory(prefix.clone().into(), lookup_dir.parent()),
                     ));
                 }
                 if let Some(pos) = pat.could_match_position(&prefix) {
