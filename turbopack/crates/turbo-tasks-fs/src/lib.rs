@@ -197,8 +197,8 @@ fn create_semaphore() -> tokio::sync::Semaphore {
 #[turbo_tasks::value_trait]
 pub trait FileSystem: ValueToString {
     /// Returns the path to the root of the file system.
-    fn root(self: Vc<Self>) -> FileSystemPath {
-        FileSystemPath::new_normalized(self, RcStr::default())
+    fn root(self: Vc<Self>) -> Vc<FileSystemPath> {
+        FileSystemPath::new_normalized(self, RcStr::default()).cell()
     }
     fn read(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<FileContent>;
     fn read_link(self: Vc<Self>, fs_path: FileSystemPath) -> Vc<LinkContent>;
@@ -1012,7 +1012,8 @@ pub fn get_relative_path_to(path: &str, other_path: &str) -> String {
     result.join("/")
 }
 
-#[derive(Debug, Clone, TaskInput, TraceRawVcs, Serialize, Deserialize, Hash, Eq, PartialEq)]
+#[turbo_tasks::value]
+#[derive(Debug, Clone, TaskInput, Hash)]
 pub struct FileSystemPath {
     pub fs: ResolvedVc<Box<dyn FileSystem>>,
     pub path: RcStr,
