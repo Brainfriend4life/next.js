@@ -333,16 +333,34 @@ impl<T: KeyValueDatabase + Send + Sync + 'static> BackingStorage
                     for (task_id, meta, data) in task_items_result?.into_iter().flatten() {
                         let key = IntKey::new(*task_id);
                         let key = key.as_ref();
-                        if let Some(meta) = meta {
+                        if let Some((meta, rcstr_map)) = meta {
+                            let global_ids = save_strings_serial(batch, &rcstr_map)?;
+                            let mut meta_bytes = SmallVec::<[u8; 16]>::new();
+                            global_ids.write_to(&mut meta_bytes)?;
+                            meta_bytes.extend_from_slice(&meta);
+
                             batch
-                                .put(KeySpace::TaskMeta, WriteBuffer::Borrowed(key), meta)
+                                .put(
+                                    KeySpace::TaskMeta,
+                                    WriteBuffer::Borrowed(key),
+                                    WriteBuffer::SmallVec(meta_bytes),
+                                )
                                 .with_context(|| {
                                     anyhow!("Unable to write meta items for {task_id}")
                                 })?;
                         }
-                        if let Some(data) = data {
+                        if let Some((data, rcstr_map)) = data {
+                            let global_ids = save_strings_serial(batch, &rcstr_map)?;
+                            let mut data_bytes = SmallVec::<[u8; 16]>::new();
+                            global_ids.write_to(&mut data_bytes)?;
+                            data_bytes.extend_from_slice(&data);
+
                             batch
-                                .put(KeySpace::TaskData, WriteBuffer::Borrowed(key), data)
+                                .put(
+                                    KeySpace::TaskData,
+                                    WriteBuffer::Borrowed(key),
+                                    WriteBuffer::SmallVec(data_bytes),
+                                )
                                 .with_context(|| {
                                     anyhow!("Unable to write data items for {task_id}")
                                 })?;
@@ -583,8 +601,8 @@ fn serialize_task_type(
 type SerializedTasks = Vec<
     Vec<(
         TaskId,
-        Option<WriteBuffer<'static>>,
-        Option<WriteBuffer<'static>>,
+        Option<(WriteBuffer<'static>, RcStrToLocalId)>,
+        Option<(WriteBuffer<'static>, RcStrToLocalId)>,
     )>,
 >;
 
@@ -616,33 +634,35 @@ where
                     if let Some(batch) = batch {
                         let key = IntKey::new(*task_id);
                         let key = key.as_ref();
-                        if let Some((meta, rcstr_map)) = meta {
+                        if let Some((mut meta, rcstr_map)) = meta {
+                            let global_ids = save_strings_concurrent(batch, &rcstr_map)?;
+                            let mut meta_bytes = SmallVec::<[u8; 16]>::new();
+                            global_ids.write_to(&mut meta_bytes)?;
+                            meta_bytes.append(&mut meta);
+
                             batch.put(
                                 KeySpace::TaskMeta,
                                 WriteBuffer::Borrowed(key),
-                                WriteBuffer::SmallVec(meta),
+                                WriteBuffer::SmallVec(meta_bytes),
                             )?;
                         }
-                        if let Some((data, rcstr_map)) = data {
+                        if let Some((mut data, rcstr_map)) = data {
+                            let global_ids = save_strings_concurrent(batch, &rcstr_map)?;
+                            let mut data_bytes = SmallVec::<[u8; 16]>::new();
+                            global_ids.write_to(&mut data_bytes)?;
+                            data_bytes.append(&mut data);
+
                             batch.put(
                                 KeySpace::TaskData,
                                 WriteBuffer::Borrowed(key),
-                                WriteBuffer::SmallVec(data),
+                                WriteBuffer::SmallVec(data_bytes),
                             )?;
                         }
                     } else {
-                        let (meta, rcstr_map1) = match meta {
-                            Some((meta, rcstr_map)) => {
-                                (Some(WriteBuffer::SmallVec(meta)), rcstr_map)
-                            }
-                            None => (None, RcStrToLocalId::default()),
-                        };
-                        let (data, rcstr_map2) = match data {
-                            Some((data, rcstr_map)) => {
-                                (Some(WriteBuffer::SmallVec(data)), rcstr_map)
-                            }
-                            None => (None, RcStrToLocalId::default()),
-                        };
+                        let meta =
+                            meta.map(|(meta, rcstr_map)| (WriteBuffer::SmallVec(meta), rcstr_map));
+                        let data =
+                            data.map(|(data, rcstr_map)| (WriteBuffer::SmallVec(data), rcstr_map));
 
                         // Store the new task data
                         result.push((task_id, meta, data));
