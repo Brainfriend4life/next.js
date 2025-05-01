@@ -1140,20 +1140,20 @@ async fn type_exists(
     ty: FileSystemEntryType,
     refs: &mut Vec<ResolvedVc<Box<dyn Source>>>,
 ) -> Result<Option<FileSystemPath>> {
-    let result = fs_path.resolve().await?.realpath_with_links().await?;
+    let result = fs_path.realpath_with_links().await?;
     refs.extend(
         result
             .symlinks
             .iter()
             .map(|path| async move {
                 Ok(ResolvedVc::upcast(
-                    FileSource::new(**path).to_resolved().await?,
+                    FileSource::new(path.clone()).to_resolved().await?,
                 ))
             })
             .try_join()
             .await?,
     );
-    let path = result.path;
+    let path = result.path.clone();
     Ok(if *path.get_type().await? == ty {
         Some(path)
     } else {
@@ -1165,20 +1165,20 @@ async fn any_exists(
     fs_path: FileSystemPath,
     refs: &mut Vec<ResolvedVc<Box<dyn Source>>>,
 ) -> Result<Option<(FileSystemEntryType, FileSystemPath)>> {
-    let result = fs_path.resolve().await?.realpath_with_links().await?;
+    let result = fs_path.realpath_with_links().await?;
     refs.extend(
         result
             .symlinks
             .iter()
             .map(|path| async move {
                 Ok(ResolvedVc::upcast(
-                    FileSource::new(**path).to_resolved().await?,
+                    FileSource::new(path.clone()).to_resolved().await?,
                 ))
             })
             .try_join()
             .await?,
     );
-    let path = result.path;
+    let path = result.path.clone();
     let ty = *path.get_type().await?;
     Ok(
         if matches!(
@@ -1187,7 +1187,7 @@ async fn any_exists(
         ) {
             None
         } else {
-            Some((ty, *path))
+            Some((ty, path))
         },
     )
 }
@@ -1202,7 +1202,7 @@ enum ExportsFieldResult {
 /// appropriate [AliasMap] for lookups.
 #[turbo_tasks::function]
 async fn exports_field(package_json_path: FileSystemPath) -> Result<Vc<ExportsFieldResult>> {
-    let read = read_package_json(*package_json_path).await?;
+    let read = read_package_json(package_json_path.clone()).await?;
     let package_json = match &*read {
         Some(json) => json,
         None => return Ok(ExportsFieldResult::None.cell()),
@@ -1243,7 +1243,7 @@ async fn imports_field(lookup_path: FileSystemPath) -> Result<Vc<ImportsFieldRes
         return Ok(ImportsFieldResult::None.cell());
     };
 
-    let read = read_package_json(**package_json_path).await?;
+    let read = read_package_json(package_json_path.clone()).await?;
     let package_json = match &*read {
         Some(json) => json,
         None => return Ok(ImportsFieldResult::None.cell()),
@@ -1253,10 +1253,10 @@ async fn imports_field(lookup_path: FileSystemPath) -> Result<Vc<ImportsFieldRes
         return Ok(ImportsFieldResult::None.cell());
     };
     match imports.try_into() {
-        Ok(imports) => Ok(ImportsFieldResult::Some(imports, *package_json_path).cell()),
+        Ok(imports) => Ok(ImportsFieldResult::Some(imports, package_json_path.clone()).cell()),
         Err(err) => {
             PackageJsonIssue {
-                path: *package_json_path,
+                path: package_json_path.clone(),
                 error_message: err.to_string().into(),
             }
             .resolved_cell()
