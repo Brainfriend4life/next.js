@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures::{stream, StreamExt};
 use serde::{Deserialize, Serialize};
-use turbo_tasks::{trace::TraceRawVcs, NonLocalValue, ResolvedVc};
+use turbo_tasks::{trace::TraceRawVcs, NonLocalValue};
 use turbo_tasks_fs::FileSystemPath;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TraceRawVcs, PartialEq, Eq, NonLocalValue)]
@@ -52,9 +52,7 @@ impl ContextCondition {
                     .await
             }
             ContextCondition::Not(condition) => Box::pin(condition.matches(path)).await.map(|b| !b),
-            ContextCondition::InPath(other_path) => {
-                Ok(path.is_inside_or_equal_ref(&*other_path.await?))
-            }
+            ContextCondition::InPath(other_path) => Ok(path.is_inside_or_equal_ref(&other_path)),
             ContextCondition::InDirectory(dir) => Ok(path.path.starts_with(&format!("{dir}/"))
                 || path.path.contains(&format!("/{dir}/"))
                 || path.path.ends_with(&format!("/{dir}"))
