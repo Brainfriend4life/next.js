@@ -1020,7 +1020,8 @@ impl<B: BackingStorage> TurboTasksBackendInner<B> {
             .flatten();
         let task_id = {
             // Safety: `tx` is a valid transaction from `self.backend.backing_storage`.
-            if let Some((task_id, rcstr_map)) = unsafe {
+            if let Some((task_id, _rcstr_map)) = unsafe {
+                // We can ignore rcstr_map because those are all already stored in the database.
                 self.backing_storage
                     .forward_lookup_task_cache(tx.as_ref(), &task_type)
             } {
