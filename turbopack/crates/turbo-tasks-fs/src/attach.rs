@@ -26,8 +26,6 @@ impl AttachedFileSystem {
         child_path: FileSystemPath,
         child_fs: ResolvedVc<Box<dyn FileSystem>>,
     ) -> Result<Vc<Self>> {
-        let child_path = child_path.await?;
-
         Ok(AttachedFileSystem {
             root_fs: child_path.fs,
             child_path: child_path.path.clone(),
@@ -57,11 +55,13 @@ impl AttachedFileSystem {
                 .root()
                 .resolve()
                 .await?
+                .await?
                 .join(contained_path.path.clone())),
             // in the child filesystem, so we expand to the full path by appending to child_path
             fs if fs == this.child_fs => Ok(self
                 .child_path()
                 .resolve()
+                .await?
                 .await?
                 .join(contained_path.path.clone())),
             _ => bail!(
