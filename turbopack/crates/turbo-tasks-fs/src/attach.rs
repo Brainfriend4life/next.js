@@ -43,7 +43,6 @@ impl AttachedFileSystem {
         self: ResolvedVc<Self>,
         contained_path_vc: FileSystemPath,
     ) -> Result<FileSystemPath> {
-        let contained_path = contained_path_vc.await?;
         let self_fs: ResolvedVc<Box<dyn FileSystem>> = ResolvedVc::upcast(self);
         let this = self.await?;
 
