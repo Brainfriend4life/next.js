@@ -32,7 +32,7 @@ impl SourceMapReference {
         let file_type = self.file.get_type().await;
         if let Ok(file_type_result) = file_type.as_ref() {
             if let FileSystemEntryType::File = &**file_type_result {
-                return Some(*self.file);
+                return Some(self.file.clone());
             }
         }
         None
