@@ -1309,38 +1309,32 @@ impl FileSystemPath {
         read_glob(self, glob, include_dot_files)
     }
 
-    #[turbo_tasks::function]
     pub fn root(self: Vc<Self>) -> Vc<Self> {
         self.fs().root()
     }
 
-    #[turbo_tasks::function]
     pub fn fs(&self) -> Vc<Box<dyn FileSystem>> {
         *self.fs
     }
 
-    #[turbo_tasks::function]
     pub fn extension(&self) -> Vc<RcStr> {
         Vc::cell(self.extension_ref().unwrap_or("").into())
     }
 
-    #[turbo_tasks::function]
     pub async fn is_inside(&self, other: FileSystemPath) -> Result<Vc<bool>> {
         Ok(Vc::cell(self.is_inside_ref(&*other.await?)))
     }
 
-    #[turbo_tasks::function]
     pub async fn is_inside_or_equal(&self, other: FileSystemPath) -> Result<Vc<bool>> {
         Ok(Vc::cell(self.is_inside_or_equal_ref(&*other.await?)))
     }
 
     /// Creates a new [`FileSystemPath`] like `self` but with the given
     /// extension.
-    #[turbo_tasks::function]
-    pub async fn with_extension(&self, extension: RcStr) -> FileSystemPath {
+    pub fn with_extension(&self, extension: RcStr) -> FileSystemPath {
         let (path_without_extension, _) = self.split_extension();
         Self::new_normalized(
-            *self.fs,
+            self.fs,
             // Like `Path::with_extension` and `PathBuf::set_extension`, if the extension is empty,
             // we remove the extension altogether.
             match extension.is_empty() {
@@ -1368,9 +1362,9 @@ impl FileSystemPath {
 
     /// See [`truncate_file_name_with_hash`]. Preserves the input [`Vc`] if no truncation was
     /// performed.
-    pub fn truncate_file_name_with_hash_vc(self: Vc<Self>) -> Result<FileSystemPath> {
+    pub fn truncate_file_name_with_hash_vc(&self) -> Result<FileSystemPath> {
         Ok(match self.truncate_file_name_with_hash()? {
-            Cow::Borrowed(_) => self,
+            Cow::Borrowed(_) => self.clone(),
             Cow::Owned(path) => path.cell(),
         })
     }
@@ -1476,24 +1470,20 @@ impl FileSystemPath {
     pub async fn read_dir(self: Vc<Self>) -> Result<Vc<DirectoryContent>> {
         let this = self.await?;
 
-        match &*this.fs.raw_read_dir(this).await? {
+        match &*this.fs.raw_read_dir(self).await? {
             RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
             RawDirectoryContent::Entries(entries) => {
                 let mut normalized_entries = AutoMap::new();
                 for (name, entry) in entries {
                     let entry = match entry {
-                        RawDirectoryEntry::File => {
-                            DirectoryEntry::File(self.join(name.clone()).to_resolved().await?)
-                        }
+                        RawDirectoryEntry::File => DirectoryEntry::File(this.join(name.clone())),
                         RawDirectoryEntry::Directory => {
-                            DirectoryEntry::Directory(self.join(name.clone()).to_resolved().await?)
+                            DirectoryEntry::Directory(this.join(name.clone()))
                         }
                         RawDirectoryEntry::Symlink => {
-                            DirectoryEntry::Symlink(self.join(name.clone()).to_resolved().await?)
+                            DirectoryEntry::Symlink(this.join(name.clone()))
                         }
-                        RawDirectoryEntry::Other => {
-                            DirectoryEntry::Other(self.join(name.clone()).to_resolved().await?)
-                        }
+                        RawDirectoryEntry::Other => DirectoryEntry::Other(this.join(name.clone())),
                         RawDirectoryEntry::Error => DirectoryEntry::Error,
                     };
                     normalized_entries.insert(name.clone(), entry);
@@ -2488,21 +2478,21 @@ mod tests {
             let path_txt = FileSystemPath::new_normalized(fs, "foo/bar.txt".into());
 
             let path_json = path_txt.with_extension("json".into());
-            assert_eq!(&*path_json.await.unwrap().path, "foo/bar.json");
+            assert_eq!(&*path_json.path, "foo/bar.json");
 
             let path_no_ext = path_txt.with_extension("".into());
-            assert_eq!(&*path_no_ext.await.unwrap().path, "foo/bar");
+            assert_eq!(&*path_no_ext.path, "foo/bar");
 
             let path_new_ext = path_no_ext.with_extension("json".into());
-            assert_eq!(&*path_new_ext.await.unwrap().path, "foo/bar.json");
+            assert_eq!(&*path_new_ext.path, "foo/bar.json");
 
             let path_no_slash_txt = FileSystemPath::new_normalized(fs, "bar.txt".into());
 
             let path_no_slash_json = path_no_slash_txt.with_extension("json".into());
-            assert_eq!(path_no_slash_json.await.unwrap().path.as_str(), "bar.json");
+            assert_eq!(path_no_slash_json.path.as_str(), "bar.json");
 
             let path_no_slash_no_ext = path_no_slash_txt.with_extension("".into());
-            assert_eq!(path_no_slash_no_ext.await.unwrap().path.as_str(), "bar");
+            assert_eq!(path_no_slash_no_ext.path.as_str(), "bar");
 
             let path_no_slash_new_ext = path_no_slash_no_ext.with_extension("json".into());
             assert_eq!(
@@ -2526,19 +2516,19 @@ mod tests {
                 .await?;
 
             let path = FileSystemPath::new_normalized(fs, "".into());
-            assert_eq!(path.file_stem().unwrap().as_deref(), None);
+            assert_eq!(path.file_stem(), None);
 
             let path = FileSystemPath::new_normalized(fs, "foo/bar.txt".into());
-            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "bar.txt".into());
-            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "foo/bar".into());
-            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "foo/.bar".into());
-            assert_eq!(path.file_stem().unwrap().as_deref(), Some(".bar"));
+            assert_eq!(path.file_stem().as_deref(), Some(".bar"));
 
             anyhow::Ok(())
         })
@@ -2569,7 +2559,7 @@ mod tests {
 
             // truncates and adds hash so that the file name length equals MAX_SAFE_FILE_NAME_LENGTH
             let path = FileSystemPath::new_normalized(fs, format!("path/{long_str}.ext").into());
-            let truncated_path = path.truncate_file_name_with_hash_vc().await?;
+            let truncated_path = path.truncate_file_name_with_hash_vc()?;
             assert_eq!(
                 truncated_path.path,
                 "path/longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglong\
