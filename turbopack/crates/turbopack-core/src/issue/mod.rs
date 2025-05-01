@@ -213,10 +213,10 @@ pub struct IssueProcessingPathItem {
 impl ValueToString for IssueProcessingPathItem {
     #[turbo_tasks::function]
     async fn to_string(&self) -> Result<Vc<RcStr>> {
-        if let Some(context) = self.file_path {
+        if let Some(context) = &self.file_path {
             let description_str = self.description.await?;
             Ok(Vc::cell(
-                format!("{} ({})", context.to_string().await?, description_str).into(),
+                format!("{} ({})", context.to_string(), description_str).into(),
             ))
         } else {
             Ok(*self.description)
@@ -229,8 +229,8 @@ impl IssueProcessingPathItem {
     #[turbo_tasks::function]
     pub async fn into_plain(&self) -> Result<Vc<PlainIssueProcessingPathItem>> {
         Ok(PlainIssueProcessingPathItem {
-            file_path: if let Some(context) = self.file_path {
-                Some(context.to_string().await?)
+            file_path: if let Some(context) = &self.file_path {
+                Some(context.path.clone())
             } else {
                 None
             },
@@ -820,7 +820,7 @@ pub struct PlainIssueProcessingPath(Option<Vec<ReadRef<PlainIssueProcessingPathI
 #[turbo_tasks::value(serialization = "none")]
 #[derive(Clone, Debug, DeterministicHash, PartialOrd, Ord)]
 pub struct PlainIssueProcessingPathItem {
-    pub file_path: Option<ReadRef<RcStr>>,
+    pub file_path: Option<RcStr>,
     pub description: ReadRef<RcStr>,
 }
 
