@@ -16,7 +16,7 @@ pub trait ResolveOrigin {
     /// since that might be needed to infer custom resolving options for that
     /// specific file. But usually only the directory is relevant for the real
     /// resolving.
-    fn origin_path(self: Vc<Self>) -> FileSystemPath;
+    fn origin_path(self: Vc<Self>) -> Vc<FileSystemPath>;
 
     /// The AssetContext that carries the configuration for building that
     /// subgraph.
@@ -125,8 +125,8 @@ impl PlainResolveOrigin {
 #[turbo_tasks::value_impl]
 impl ResolveOrigin for PlainResolveOrigin {
     #[turbo_tasks::function]
-    fn origin_path(&self) -> FileSystemPath {
-        *self.origin_path
+    fn origin_path(&self) -> Vc<FileSystemPath> {
+        self.origin_path.clone()
     }
 
     #[turbo_tasks::function]
@@ -145,7 +145,7 @@ struct ResolveOriginWithTransition {
 #[turbo_tasks::value_impl]
 impl ResolveOrigin for ResolveOriginWithTransition {
     #[turbo_tasks::function]
-    fn origin_path(&self) -> FileSystemPath {
+    fn origin_path(&self) -> Vc<FileSystemPath> {
         self.previous.origin_path()
     }
 
