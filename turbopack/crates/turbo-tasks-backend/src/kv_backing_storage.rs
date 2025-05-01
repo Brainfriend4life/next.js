@@ -1,4 +1,11 @@
-use std::{borrow::Borrow, cmp::max, sync::Arc};
+use std::{
+    borrow::Borrow,
+    cmp::max,
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc, OnceLock,
+    },
+};
 
 use anyhow::{anyhow, bail, Context, Result};
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
@@ -777,6 +784,8 @@ fn save_strings_concurrent<'a>(
     Ok(LocalIdToGlobalId::from(global_ids))
 }
 
+static ID: OnceLock<AtomicU32> = OnceLock::new();
+
 /// Returns `(global_id, is_new)`
 fn get_string_id<'a>(batch: &impl BaseWriteBatch<'a>, s: &RcStr) -> Result<(u32, bool)> {
     let original = batch.get(KeySpace::StringInternMap, s.as_bytes())?;
@@ -790,7 +799,11 @@ fn get_string_id<'a>(batch: &impl BaseWriteBatch<'a>, s: &RcStr) -> Result<(u32,
         return Ok((0, true));
     };
 
-    let global_id = as_u32(bytes)?;
+    let latest_id = as_u32(bytes)?;
+
+    let global_id = ID
+        .get_or_init(|| AtomicU32::new(latest_id))
+        .fetch_add(1, Ordering::Relaxed);
 
     Ok((global_id, true))
 }
