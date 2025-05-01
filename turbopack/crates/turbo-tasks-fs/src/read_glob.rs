@@ -18,7 +18,7 @@ pub struct ReadGlobResult {
 /// on the order.
 #[turbo_tasks::function(fs)]
 pub async fn read_glob(
-    directory: Vc<FileSystemPath>,
+    directory: FileSystemPath,
     glob: Vc<Glob>,
     include_dot_files: bool,
 ) -> Result<Vc<ReadGlobResult>> {
@@ -58,7 +58,7 @@ async fn read_glob_internal(
                         if glob_value.execute(&full_path) {
                             result
                                 .results
-                                .insert(full_path.clone(), DirectoryEntry::Directory(path));
+                                .insert(full_path.clone(), DirectoryEntry::Directory(path.clone()));
                         }
                         if glob_value.execute(&full_path_prefix) {
                             result.inner.insert(
