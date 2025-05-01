@@ -137,9 +137,9 @@ pub trait ChunkingContext {
     fn name(self: Vc<Self>) -> Vc<RcStr>;
     fn should_use_file_source_map_uris(self: Vc<Self>) -> Vc<bool>;
     /// The root path of the project
-    fn root_path(self: Vc<Self>) -> FileSystemPath;
+    fn root_path(self: Vc<Self>) -> Vc<FileSystemPath>;
     /// The output root path in the output filesystem
-    fn output_root(self: Vc<Self>) -> FileSystemPath;
+    fn output_root(self: Vc<Self>) -> Vc<FileSystemPath>;
     /// A relative path how to reach the root path from the output root. This is used to compute
     /// original paths at runtime relative to the output files. e. g. import.meta.url needs that.
     fn output_root_to_root_path(self: Vc<Self>) -> Vc<RcStr>;
@@ -150,7 +150,7 @@ pub trait ChunkingContext {
 
     /// The path to the folder where all chunks are placed. This can be used to compute relative
     /// paths.
-    fn chunk_root_path(self: Vc<Self>) -> FileSystemPath;
+    fn chunk_root_path(self: Vc<Self>) -> Vc<FileSystemPath>;
 
     // TODO(alexkirsz) Remove this from the chunking context. This should be at the
     // discretion of chunking context implementors. However, we currently use this
@@ -161,7 +161,7 @@ pub trait ChunkingContext {
         asset: Option<Vc<Box<dyn Asset>>>,
         ident: Vc<AssetIdent>,
         extension: RcStr,
-    ) -> FileSystemPath;
+    ) -> Vc<FileSystemPath>;
 
     /// Reference Source Map Assets for chunks
     fn reference_chunk_source_maps(self: Vc<Self>, chunk: Vc<Box<dyn OutputAsset>>) -> Vc<bool>;
@@ -177,7 +177,7 @@ pub trait ChunkingContext {
         self: Vc<Self>,
         content_hash: RcStr,
         original_asset_ident: Vc<AssetIdent>,
-    ) -> FileSystemPath;
+    ) -> Vc<FileSystemPath>;
 
     fn is_hot_module_replacement_enabled(self: Vc<Self>) -> Vc<bool> {
         Vc::cell(false)
