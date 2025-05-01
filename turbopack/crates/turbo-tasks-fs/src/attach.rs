@@ -128,38 +128,46 @@ impl AttachedFileSystem {
 #[turbo_tasks::value_impl]
 impl FileSystem for AttachedFileSystem {
     #[turbo_tasks::function(fs)]
-    fn read(self: Vc<Self>, path: FileSystemPath) -> Vc<FileContent> {
-        self.get_inner_fs_path(path).read()
+    async fn read(self: Vc<Self>, path: FileSystemPath) -> Result<Vc<FileContent>> {
+        Ok(self.get_inner_fs_path(path).await?.read())
     }
 
     #[turbo_tasks::function(fs)]
-    fn read_link(self: Vc<Self>, path: FileSystemPath) -> Vc<LinkContent> {
-        self.get_inner_fs_path(path).read_link()
+    async fn read_link(self: Vc<Self>, path: FileSystemPath) -> Result<Vc<LinkContent>> {
+        Ok(self.get_inner_fs_path(path).await?.read_link())
     }
 
     #[turbo_tasks::function(fs)]
-    fn raw_read_dir(self: Vc<Self>, path: FileSystemPath) -> Vc<RawDirectoryContent> {
-        self.get_inner_fs_path(path).raw_read_dir()
+    async fn raw_read_dir(self: Vc<Self>, path: FileSystemPath) -> Result<Vc<RawDirectoryContent>> {
+        Ok(self.get_inner_fs_path(path).await?.raw_read_dir())
     }
 
     #[turbo_tasks::function(fs)]
-    fn track(self: Vc<Self>, path: FileSystemPath) -> Vc<Completion> {
-        self.get_inner_fs_path(path).track()
+    async fn track(self: Vc<Self>, path: FileSystemPath) -> Result<Vc<Completion>> {
+        Ok(self.get_inner_fs_path(path).await?.track())
     }
 
     #[turbo_tasks::function(fs)]
-    fn write(self: Vc<Self>, path: FileSystemPath, content: Vc<FileContent>) -> Vc<()> {
-        self.get_inner_fs_path(path).write(content)
+    async fn write(
+        self: Vc<Self>,
+        path: FileSystemPath,
+        content: Vc<FileContent>,
+    ) -> Result<Vc<()>> {
+        Ok(self.get_inner_fs_path(path).await?.write(content))
     }
 
     #[turbo_tasks::function(fs)]
-    fn write_link(self: Vc<Self>, path: FileSystemPath, target: Vc<LinkContent>) -> Vc<()> {
-        self.get_inner_fs_path(path).write_link(target)
+    async fn write_link(
+        self: Vc<Self>,
+        path: FileSystemPath,
+        target: Vc<LinkContent>,
+    ) -> Result<Vc<()>> {
+        Ok(self.get_inner_fs_path(path).await?.write_link(target))
     }
 
     #[turbo_tasks::function]
-    fn metadata(self: Vc<Self>, path: FileSystemPath) -> Vc<FileMeta> {
-        self.get_inner_fs_path(path).metadata()
+    async fn metadata(self: Vc<Self>, path: FileSystemPath) -> Result<Vc<FileMeta>> {
+        Ok(self.get_inner_fs_path(path).await?.metadata())
     }
 }
 
