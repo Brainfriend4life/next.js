@@ -34,8 +34,8 @@ async fn main() -> Result<()> {
 
             // Smart Pointer cast
             let fs: Vc<Box<dyn FileSystem>> = Vc::upcast(disk_fs);
-            let input = fs.root().join("crates".into());
-            let glob = Glob::new("**/*.rs".into());
+            let input = fs.root().await?.join("crates".into())?;
+            let glob: Vc<Glob> = Glob::new("**/*.rs".into());
             let glob_result = input.read_glob(glob, true);
             let dir_hash = hash_glob_result(glob_result);
             print_hash(dir_hash).await?;
@@ -74,7 +74,7 @@ async fn hash_glob_result(result: Vc<ReadGlobResult>) -> Result<Vc<RcStr>> {
     let mut hashes = BTreeMap::new();
     for (name, entry) in result.results.iter() {
         if let DirectoryEntry::File(path) = entry {
-            hashes.insert(name, hash_file(**path).owned().await?);
+            hashes.insert(name, hash_file(path.clone()).owned().await?);
         }
     }
     for (name, result) in result.inner.iter() {
