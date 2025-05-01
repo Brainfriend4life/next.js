@@ -205,7 +205,7 @@ impl CompileTimeDefines {
 pub enum FreeVarReference {
     EcmaScriptModule {
         request: RcStr,
-        lookup_path: Option<ResolvedFileSystemPath>,
+        lookup_path: Option<FileSystemPath>,
         export: Option<RcStr>,
     },
     Ident(RcStr),

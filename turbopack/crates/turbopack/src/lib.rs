@@ -945,7 +945,7 @@ pub fn emit_with_completion(asset: Vc<Box<dyn OutputAsset>>, output_dir: FileSys
 #[turbo_tasks::function(operation)]
 pub fn emit_with_completion_operation(
     asset: ResolvedVc<Box<dyn OutputAsset>>,
-    output_dir: ResolvedFileSystemPath,
+    output_dir: FileSystemPath,
 ) -> Vc<()> {
     emit_with_completion(*asset, *output_dir)
 }

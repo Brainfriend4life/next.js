@@ -6,7 +6,7 @@ use super::{Issue, IssueSeverity, IssueStage, OptionStyledString, StyledString};
 #[turbo_tasks::value(shared)]
 pub struct CodeGenerationIssue {
     pub severity: ResolvedVc<IssueSeverity>,
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
     pub title: ResolvedVc<StyledString>,
     pub message: ResolvedVc<StyledString>,
 }

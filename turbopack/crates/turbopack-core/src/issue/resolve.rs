@@ -20,7 +20,7 @@ pub struct ResolvingIssue {
     pub severity: ResolvedVc<IssueSeverity>,
     pub request_type: String,
     pub request: ResolvedVc<Request>,
-    pub file_path: ResolvedFileSystemPath,
+    pub file_path: FileSystemPath,
     pub resolve_options: ResolvedVc<ResolveOptions>,
     pub error_message: Option<String>,
     pub source: Option<IssueSource>,

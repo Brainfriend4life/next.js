@@ -144,7 +144,7 @@ impl FetchError {
     pub async fn to_issue(
         self: Vc<Self>,
         severity: ResolvedVc<IssueSeverity>,
-        issue_context: ResolvedFileSystemPath,
+        issue_context: FileSystemPath,
     ) -> Result<Vc<FetchIssue>> {
         let this = &*self.await?;
         Ok(FetchIssue {
@@ -160,7 +160,7 @@ impl FetchError {
 
 #[turbo_tasks::value(shared)]
 pub struct FetchIssue {
-    pub issue_context: ResolvedFileSystemPath,
+    pub issue_context: FileSystemPath,
     pub severity: ResolvedVc<IssueSeverity>,
     pub url: ResolvedVc<RcStr>,
     pub kind: ResolvedVc<FetchErrorKind>,

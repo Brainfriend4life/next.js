@@ -329,7 +329,7 @@ impl EcmascriptModuleAsset {
 #[derive(Copy, Clone)]
 pub(crate) struct ModuleTypeResult {
     pub module_type: SpecifiedModuleType,
-    pub referenced_package_json: Option<ResolvedFileSystemPath>,
+    pub referenced_package_json: Option<FileSystemPath>,
 }
 
 #[turbo_tasks::value_impl]
@@ -345,7 +345,7 @@ impl ModuleTypeResult {
     #[turbo_tasks::function]
     fn new_with_package_json(
         module_type: SpecifiedModuleType,
-        package_json: ResolvedFileSystemPath,
+        package_json: FileSystemPath,
     ) -> Vc<Self> {
         Self::cell(ModuleTypeResult {
             module_type,

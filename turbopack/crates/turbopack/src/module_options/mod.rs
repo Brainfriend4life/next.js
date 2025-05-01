@@ -46,7 +46,7 @@ async fn package_import_map_from_import_mapping(
 #[turbo_tasks::function]
 async fn package_import_map_from_context(
     package_name: RcStr,
-    context_path: ResolvedFileSystemPath,
+    context_path: FileSystemPath,
 ) -> Vc<ImportMap> {
     let mut import_map = ImportMap::default();
     import_map.insert_exact_alias(

@@ -48,7 +48,7 @@ async fn foreign_code_context_condition() -> Result<ContextCondition> {
 }
 
 #[turbo_tasks::function]
-pub async fn get_client_import_map(project_path: ResolvedFileSystemPath) -> Result<Vc<ImportMap>> {
+pub async fn get_client_import_map(project_path: FileSystemPath) -> Result<Vc<ImportMap>> {
     let mut import_map = ImportMap::empty();
 
     import_map.insert_singleton_alias("@swc/helpers", project_path);

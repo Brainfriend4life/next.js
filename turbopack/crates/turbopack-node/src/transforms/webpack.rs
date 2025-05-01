@@ -416,7 +416,7 @@ pub enum ResponseMessage {
 #[derive(Clone, PartialEq, Eq, Hash, TaskInput, Serialize, Deserialize, Debug, TraceRawVcs)]
 pub struct WebpackLoaderContext {
     pub module_asset: ResolvedVc<Box<dyn Module>>,
-    pub cwd: ResolvedFileSystemPath,
+    pub cwd: FileSystemPath,
     pub env: ResolvedVc<Box<dyn ProcessEnv>>,
     pub context_ident_for_issue: ResolvedVc<AssetIdent>,
     pub asset_context: ResolvedVc<Box<dyn AssetContext>>,
@@ -735,7 +735,7 @@ async fn apply_webpack_resolve_options(
 #[turbo_tasks::value(shared)]
 pub struct BuildDependencyIssue {
     pub context_ident: ResolvedVc<AssetIdent>,
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
@@ -819,12 +819,12 @@ async fn dir_dependency_shallow(glob: Vc<ReadGlobResult>) -> Result<Vc<Completio
 
 #[turbo_tasks::value(shared)]
 pub struct EvaluateEmittedErrorIssue {
-    pub file_path: ResolvedFileSystemPath,
+    pub file_path: FileSystemPath,
     pub severity: ResolvedVc<IssueSeverity>,
     pub error: StructuredError,
     pub assets_for_source_mapping: ResolvedVc<AssetsForSourceMapping>,
-    pub assets_root: ResolvedFileSystemPath,
-    pub project_dir: ResolvedFileSystemPath,
+    pub assets_root: FileSystemPath,
+    pub project_dir: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
@@ -870,13 +870,13 @@ impl Issue for EvaluateEmittedErrorIssue {
 
 #[turbo_tasks::value(shared)]
 pub struct EvaluateErrorLoggingIssue {
-    pub file_path: ResolvedFileSystemPath,
+    pub file_path: FileSystemPath,
     pub severity: ResolvedVc<IssueSeverity>,
     #[turbo_tasks(trace_ignore)]
     pub logging: Vec<LogInfo>,
     pub assets_for_source_mapping: ResolvedVc<AssetsForSourceMapping>,
-    pub assets_root: ResolvedFileSystemPath,
-    pub project_dir: ResolvedFileSystemPath,
+    pub assets_root: FileSystemPath,
+    pub project_dir: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]

@@ -262,7 +262,7 @@ async fn extra_configs_changed(
 
 #[turbo_tasks::value]
 pub struct JsonSource {
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
     pub key: ResolvedVc<Option<RcStr>>,
     pub allow_json5: bool,
 }
@@ -271,7 +271,7 @@ pub struct JsonSource {
 impl JsonSource {
     #[turbo_tasks::function]
     pub fn new(
-        path: ResolvedFileSystemPath,
+        path: FileSystemPath,
         key: ResolvedVc<Option<RcStr>>,
         allow_json5: bool,
     ) -> Vc<Self> {
@@ -575,7 +575,7 @@ impl PostCssTransformedAsset {
 
 #[turbo_tasks::value]
 struct PostCssTransformIssue {
-    source: ResolvedFileSystemPath,
+    source: FileSystemPath,
     description: RcStr,
     severity: ResolvedVc<IssueSeverity>,
     title: RcStr,

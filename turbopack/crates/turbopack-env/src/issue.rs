@@ -5,7 +5,7 @@ use turbopack_core::issue::{Issue, IssueStage, OptionStyledString, StyledString}
 /// An issue that occurred while resolving the parsing or evaluating the .env.
 #[turbo_tasks::value(shared)]
 pub struct ProcessEnvIssue {
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
     pub description: ResolvedVc<StyledString>,
 }
 

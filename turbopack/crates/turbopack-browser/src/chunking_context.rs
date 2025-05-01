@@ -176,19 +176,19 @@ impl BrowserChunkingContextBuilder {
 pub struct BrowserChunkingContext {
     name: Option<RcStr>,
     /// The root path of the project
-    root_path: ResolvedFileSystemPath,
+    root_path: FileSystemPath,
     /// Whether to write file sources as file:// paths in source maps
     should_use_file_source_map_uris: bool,
     /// This path is used to compute the url to request chunks from
-    output_root: ResolvedFileSystemPath,
+    output_root: FileSystemPath,
     /// The relative path from the output_root to the root_path.
     output_root_to_root_path: ResolvedVc<RcStr>,
     /// This path is used to compute the url to request assets from
-    client_root: ResolvedFileSystemPath,
+    client_root: FileSystemPath,
     /// Chunks are placed at this path
-    chunk_root_path: ResolvedFileSystemPath,
+    chunk_root_path: FileSystemPath,
     /// Static assets are placed at this path
-    asset_root_path: ResolvedFileSystemPath,
+    asset_root_path: FileSystemPath,
     /// Base path that will be prepended to all chunk URLs when loading them.
     /// This path will not appear in chunk paths or chunk data.
     chunk_base_path: ResolvedVc<Option<RcStr>>,
@@ -224,12 +224,12 @@ pub struct BrowserChunkingContext {
 
 impl BrowserChunkingContext {
     pub fn builder(
-        root_path: ResolvedFileSystemPath,
-        output_root: ResolvedFileSystemPath,
+        root_path: FileSystemPath,
+        output_root: FileSystemPath,
         output_root_to_root_path: ResolvedVc<RcStr>,
-        client_root: ResolvedFileSystemPath,
-        chunk_root_path: ResolvedFileSystemPath,
-        asset_root_path: ResolvedFileSystemPath,
+        client_root: FileSystemPath,
+        chunk_root_path: FileSystemPath,
+        asset_root_path: FileSystemPath,
         environment: ResolvedVc<Environment>,
         runtime_type: RuntimeType,
     ) -> BrowserChunkingContextBuilder {

@@ -10,17 +10,14 @@ use turbopack_core::{
 /// content hashing to generate a long term cacheable URL.
 #[turbo_tasks::value]
 pub struct FixedStaticAsset {
-    output_path: ResolvedFileSystemPath,
+    output_path: FileSystemPath,
     source: ResolvedVc<Box<dyn Source>>,
 }
 
 #[turbo_tasks::value_impl]
 impl FixedStaticAsset {
     #[turbo_tasks::function]
-    pub fn new(
-        output_path: ResolvedFileSystemPath,
-        source: ResolvedVc<Box<dyn Source>>,
-    ) -> Vc<Self> {
+    pub fn new(output_path: FileSystemPath, source: ResolvedVc<Box<dyn Source>>) -> Vc<Self> {
         FixedStaticAsset {
             output_path,
             source,

@@ -153,7 +153,7 @@ fn disk_file_system_root_operation(fs: ResolvedVc<DiskFileSystem>) -> FileSystem
 #[turbo_tasks::function]
 async fn read_path(
     invalidations: TransientInstance<PathInvalidations>,
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
 ) -> anyhow::Result<()> {
     let path_str = path.await?.path.clone();
     invalidations.0.lock().unwrap().insert(path_str);
@@ -164,13 +164,13 @@ async fn read_path(
 #[turbo_tasks::function(operation)]
 async fn read_all_paths_operation(
     invalidations: TransientInstance<PathInvalidations>,
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
     depth: usize,
     width: usize,
 ) -> anyhow::Result<()> {
     async fn read_all_paths_inner(
         invalidations: TransientInstance<PathInvalidations>,
-        parent: ResolvedFileSystemPath,
+        parent: FileSystemPath,
         depth: usize,
         width: usize,
     ) -> anyhow::Result<()> {

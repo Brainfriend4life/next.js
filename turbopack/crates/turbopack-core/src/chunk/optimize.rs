@@ -10,7 +10,7 @@ use turbo_tasks_fs::{FileSystemPath, FileSystemPathOption};
 use crate::chunk::containment_tree::{ContainmentTree, ContainmentTreeKey};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-struct FileSystemPathKey(ResolvedFileSystemPath);
+struct FileSystemPathKey(FileSystemPath);
 
 impl FileSystemPathKey {
     async fn new(path: FileSystemPath) -> Result<Self> {

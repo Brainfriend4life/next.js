@@ -9,9 +9,9 @@ pub struct NodeRenderingEntry {
     pub runtime_entries: ResolvedVc<EvaluatableAssets>,
     pub module: ResolvedVc<Box<dyn EvaluatableAsset>>,
     pub chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
-    pub intermediate_output_path: ResolvedFileSystemPath,
-    pub output_root: ResolvedFileSystemPath,
-    pub project_dir: ResolvedFileSystemPath,
+    pub intermediate_output_path: FileSystemPath,
+    pub output_root: FileSystemPath,
+    pub project_dir: FileSystemPath,
 }
 
 #[turbo_tasks::value(transparent)]

@@ -54,7 +54,7 @@ use crate::{
 #[turbo_tasks::value]
 #[derive(Debug)]
 pub(crate) enum DirListEntry {
-    File(ResolvedFileSystemPath),
+    File(FileSystemPath),
     Dir(ResolvedVc<DirList>),
 }
 
@@ -144,7 +144,7 @@ impl DirList {
 }
 
 #[turbo_tasks::value(transparent)]
-pub(crate) struct FlatDirList(FxIndexMap<RcStr, ResolvedFileSystemPath>);
+pub(crate) struct FlatDirList(FxIndexMap<RcStr, FileSystemPath>);
 
 #[turbo_tasks::value_impl]
 impl FlatDirList {

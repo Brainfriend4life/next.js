@@ -1124,14 +1124,14 @@ impl ResolveResultOption {
 async fn exists(
     fs_path: FileSystemPath,
     refs: &mut Vec<ResolvedVc<Box<dyn Source>>>,
-) -> Result<Option<ResolvedFileSystemPath>> {
+) -> Result<Option<FileSystemPath>> {
     type_exists(fs_path, FileSystemEntryType::File, refs).await
 }
 
 async fn dir_exists(
     fs_path: FileSystemPath,
     refs: &mut Vec<ResolvedVc<Box<dyn Source>>>,
-) -> Result<Option<ResolvedFileSystemPath>> {
+) -> Result<Option<FileSystemPath>> {
     type_exists(fs_path, FileSystemEntryType::Directory, refs).await
 }
 
@@ -1139,7 +1139,7 @@ async fn type_exists(
     fs_path: FileSystemPath,
     ty: FileSystemEntryType,
     refs: &mut Vec<ResolvedVc<Box<dyn Source>>>,
-) -> Result<Option<ResolvedFileSystemPath>> {
+) -> Result<Option<FileSystemPath>> {
     let result = fs_path.resolve().await?.realpath_with_links().await?;
     refs.extend(
         result
@@ -1201,9 +1201,7 @@ enum ExportsFieldResult {
 /// Extracts the "exports" field out of the package.json, parsing it into an
 /// appropriate [AliasMap] for lookups.
 #[turbo_tasks::function]
-async fn exports_field(
-    package_json_path: ResolvedFileSystemPath,
-) -> Result<Vc<ExportsFieldResult>> {
+async fn exports_field(package_json_path: FileSystemPath) -> Result<Vc<ExportsFieldResult>> {
     let read = read_package_json(*package_json_path).await?;
     let package_json = match &*read {
         Some(json) => json,
@@ -1231,7 +1229,7 @@ async fn exports_field(
 enum ImportsFieldResult {
     Some(
         #[turbo_tasks(debug_ignore, trace_ignore)] ImportsField,
-        ResolvedFileSystemPath,
+        FileSystemPath,
     ),
     None,
 }
@@ -1275,7 +1273,7 @@ pub fn package_json() -> Vc<Vec<RcStr>> {
 
 #[turbo_tasks::value(shared)]
 pub enum FindContextFileResult {
-    Found(ResolvedFileSystemPath, Vec<ResolvedVc<Box<dyn Source>>>),
+    Found(FileSystemPath, Vec<ResolvedVc<Box<dyn Source>>>),
     NotFound(Vec<ResolvedVc<Box<dyn Source>>>),
 }
 
@@ -1367,8 +1365,8 @@ pub async fn find_context_file_or_package_key(
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TraceRawVcs, Debug, NonLocalValue)]
 enum FindPackageItem {
-    PackageDirectory(ResolvedFileSystemPath),
-    PackageFile(ResolvedFileSystemPath),
+    PackageDirectory(FileSystemPath),
+    PackageFile(FileSystemPath),
 }
 
 #[turbo_tasks::value]
@@ -1490,7 +1488,7 @@ pub async fn resolve_raw(
     path: Vc<Pattern>,
     force_in_lookup_dir: bool,
 ) -> Result<Vc<ResolveResult>> {
-    async fn to_result(request: &str, path: ResolvedFileSystemPath) -> Result<Vc<ResolveResult>> {
+    async fn to_result(request: &str, path: FileSystemPath) -> Result<Vc<ResolveResult>> {
         let RealPathResult { path, symlinks } = &*path.realpath_with_links().await?;
         Ok(*ResolveResult::source_with_affecting_sources(
             RequestKey::new(request.into()),
@@ -1751,7 +1749,7 @@ async fn handle_after_resolve_plugins(
 
 #[turbo_tasks::function]
 async fn resolve_internal(
-    lookup_path: ResolvedFileSystemPath,
+    lookup_path: FileSystemPath,
     request: ResolvedVc<Request>,
     options: ResolvedVc<ResolveOptions>,
 ) -> Result<Vc<ResolveResult>> {
@@ -2094,7 +2092,7 @@ async fn resolve_internal_inline(
 
 #[turbo_tasks::function]
 async fn resolve_into_folder(
-    package_path: ResolvedFileSystemPath,
+    package_path: FileSystemPath,
     options: Vc<ResolveOptions>,
 ) -> Result<Vc<ResolveResult>> {
     let package_json_path = package_path.join("package.json".into());
@@ -2478,7 +2476,7 @@ async fn apply_in_package(
 enum FindSelfReferencePackageResult {
     Found {
         name: String,
-        package_path: ResolvedFileSystemPath,
+        package_path: FileSystemPath,
     },
     NotFound,
 }
@@ -2633,7 +2631,7 @@ async fn resolve_module_request(
 #[turbo_tasks::function]
 async fn resolve_into_package(
     path: Value<Pattern>,
-    package_path: ResolvedFileSystemPath,
+    package_path: FileSystemPath,
     query: Vc<RcStr>,
     fragment: Vc<RcStr>,
     options: ResolvedVc<ResolveOptions>,

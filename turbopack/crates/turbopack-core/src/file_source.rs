@@ -13,14 +13,14 @@ use crate::{
 /// references to other [Source]s.
 #[turbo_tasks::value]
 pub struct FileSource {
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
     pub query: ResolvedVc<RcStr>,
 }
 
 #[turbo_tasks::value_impl]
 impl FileSource {
     #[turbo_tasks::function]
-    pub fn new(path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(path: FileSystemPath) -> Vc<Self> {
         Self::cell(FileSource {
             path,
             query: ResolvedVc::cell(RcStr::default()),
@@ -29,7 +29,7 @@ impl FileSource {
 
     #[turbo_tasks::function]
     pub async fn new_with_query(
-        path: ResolvedFileSystemPath,
+        path: FileSystemPath,
         query: ResolvedVc<RcStr>,
     ) -> Result<Vc<Self>> {
         if query.await?.is_empty() {

@@ -219,7 +219,7 @@ pub async fn read_from_tsconfigs<T>(
 #[turbo_tasks::value]
 #[derive(Default)]
 pub struct TsConfigResolveOptions {
-    base_url: Option<ResolvedFileSystemPath>,
+    base_url: Option<FileSystemPath>,
     import_map: Option<ResolvedVc<ImportMap>>,
     is_module_resolution_nodenext: bool,
 }

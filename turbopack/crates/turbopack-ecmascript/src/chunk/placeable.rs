@@ -38,7 +38,7 @@ enum SideEffectsValue {
 
 #[turbo_tasks::function]
 async fn side_effects_from_package_json(
-    package_json: ResolvedFileSystemPath,
+    package_json: FileSystemPath,
 ) -> Result<Vc<SideEffectsValue>> {
     if let FileJsonContent::Content(content) = &*package_json.read_json().await? {
         if let Some(side_effects) = content.get("sideEffects") {
@@ -128,7 +128,7 @@ async fn side_effects_from_package_json(
 
 #[turbo_tasks::value]
 struct SideEffectsInPackageJsonIssue {
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
     description: Option<ResolvedVc<StyledString>>,
 }
 

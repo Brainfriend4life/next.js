@@ -205,7 +205,7 @@ trait IssueProcessingPath {
 
 #[turbo_tasks::value]
 pub struct IssueProcessingPathItem {
-    pub file_path: Option<ResolvedFileSystemPath>,
+    pub file_path: Option<FileSystemPath>,
     pub description: ResolvedVc<RcStr>,
 }
 

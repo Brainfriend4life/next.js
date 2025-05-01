@@ -12,14 +12,14 @@ use crate::{
 /// A condition which determines if the hooks of a resolve plugin gets called.
 #[turbo_tasks::value]
 pub struct AfterResolvePluginCondition {
-    root: ResolvedFileSystemPath,
+    root: FileSystemPath,
     glob: ResolvedVc<Glob>,
 }
 
 #[turbo_tasks::value_impl]
 impl AfterResolvePluginCondition {
     #[turbo_tasks::function]
-    pub fn new(root: ResolvedFileSystemPath, glob: ResolvedVc<Glob>) -> Vc<Self> {
+    pub fn new(root: FileSystemPath, glob: ResolvedVc<Glob>) -> Vc<Self> {
         AfterResolvePluginCondition { root, glob }.cell()
     }
 

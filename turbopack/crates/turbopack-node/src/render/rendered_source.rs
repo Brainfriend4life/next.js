@@ -43,11 +43,11 @@ use crate::{
 /// to this directory.
 #[turbo_tasks::function]
 pub fn create_node_rendered_source(
-    cwd: ResolvedFileSystemPath,
+    cwd: FileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
     base_segments: Vec<BaseSegment>,
     route_type: RouteType,
-    server_root: ResolvedFileSystemPath,
+    server_root: FileSystemPath,
     route_match: ResolvedVc<Box<dyn RouteMatcher>>,
     pathname: ResolvedVc<RcStr>,
     entry: ResolvedVc<Box<dyn NodeEntry>>,
@@ -83,11 +83,11 @@ pub fn create_node_rendered_source(
 /// see [create_node_rendered_source]
 #[turbo_tasks::value]
 pub struct NodeRenderContentSource {
-    cwd: ResolvedFileSystemPath,
+    cwd: FileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
     base_segments: Vec<BaseSegment>,
     route_type: RouteType,
-    server_root: ResolvedFileSystemPath,
+    server_root: FileSystemPath,
     route_match: ResolvedVc<Box<dyn RouteMatcher>>,
     pathname: ResolvedVc<RcStr>,
     entry: ResolvedVc<Box<dyn NodeEntry>>,

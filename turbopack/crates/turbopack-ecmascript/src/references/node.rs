@@ -18,13 +18,13 @@ use turbopack_core::{
 #[turbo_tasks::value]
 #[derive(Hash, Clone, Debug)]
 pub struct PackageJsonReference {
-    pub package_json: ResolvedFileSystemPath,
+    pub package_json: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl PackageJsonReference {
     #[turbo_tasks::function]
-    pub fn new(package_json: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(package_json: FileSystemPath) -> Vc<Self> {
         Self::cell(PackageJsonReference { package_json })
     }
 }

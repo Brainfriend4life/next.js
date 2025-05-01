@@ -14,7 +14,7 @@ use crate::resolve::ModulePart;
 #[derive(Clone, Debug, Hash)]
 pub struct AssetIdent {
     /// The primary path of the asset
-    pub path: ResolvedFileSystemPath,
+    pub path: FileSystemPath,
     /// The query string of the asset (e.g. `?foo=bar`)
     pub query: ResolvedVc<RcStr>,
     /// The fragment of the asset (e.g. `#foo`)
@@ -127,7 +127,7 @@ impl AssetIdent {
 
     /// Creates an [AssetIdent] from a [FileSystemPath]
     #[turbo_tasks::function]
-    pub fn from_path(path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn from_path(path: FileSystemPath) -> Vc<Self> {
         Self::new(Value::new(AssetIdent {
             path,
             query: ResolvedVc::cell(RcStr::default()),
@@ -162,7 +162,7 @@ impl AssetIdent {
     }
 
     #[turbo_tasks::function]
-    pub fn with_path(&self, path: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn with_path(&self, path: FileSystemPath) -> Vc<Self> {
         let mut this = self.clone();
         this.path = path;
         Self::new(Value::new(this))

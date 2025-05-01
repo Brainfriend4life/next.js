@@ -1316,12 +1316,12 @@ impl ValueToString for Pattern {
     NonLocalValue,
 )]
 pub enum PatternMatch {
-    File(RcStr, ResolvedFileSystemPath),
-    Directory(RcStr, ResolvedFileSystemPath),
+    File(RcStr, FileSystemPath),
+    Directory(RcStr, FileSystemPath),
 }
 
 impl PatternMatch {
-    pub fn path(&self) -> ResolvedFileSystemPath {
+    pub fn path(&self) -> FileSystemPath {
         match *self {
             PatternMatch::File(_, path) | PatternMatch::Directory(_, path) => path,
         }
@@ -1349,7 +1349,7 @@ pub struct PatternMatches(Vec<PatternMatch>);
 /// symlinks when they are interested in that.
 #[turbo_tasks::function]
 pub async fn read_matches(
-    lookup_dir: ResolvedFileSystemPath,
+    lookup_dir: FileSystemPath,
     prefix: RcStr,
     force_in_lookup_dir: bool,
     pattern: Vc<Pattern>,

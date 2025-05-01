@@ -74,16 +74,16 @@ impl StaticResult {
 /// Renders a module as static HTML in a node.js process.
 #[turbo_tasks::function(operation)]
 pub async fn render_static_operation(
-    cwd: ResolvedFileSystemPath,
+    cwd: FileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
     module: ResolvedVc<Box<dyn EvaluatableAsset>>,
     runtime_entries: ResolvedVc<EvaluatableAssets>,
     fallback_page: ResolvedVc<DevHtmlAsset>,
     chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
-    intermediate_output_path: ResolvedFileSystemPath,
-    output_root: ResolvedFileSystemPath,
-    project_dir: ResolvedFileSystemPath,
+    intermediate_output_path: FileSystemPath,
+    output_root: FileSystemPath,
+    project_dir: FileSystemPath,
     data: ResolvedVc<RenderData>,
     debug: bool,
 ) -> Result<Vc<StaticResult>> {
@@ -136,7 +136,7 @@ pub async fn render_static_operation(
 }
 
 async fn static_error(
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
     error: anyhow::Error,
     operation: Option<NodeJsOperation>,
     fallback_page: Vc<DevHtmlAsset>,
@@ -201,16 +201,16 @@ struct RenderStream(#[turbo_tasks(trace_ignore)] Stream<RenderItemResult>);
 
 #[derive(Clone, Debug, TaskInput, PartialEq, Eq, Hash, Deserialize, Serialize, TraceRawVcs)]
 struct RenderStreamOptions {
-    cwd: ResolvedFileSystemPath,
+    cwd: FileSystemPath,
     env: ResolvedVc<Box<dyn ProcessEnv>>,
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
     module: ResolvedVc<Box<dyn EvaluatableAsset>>,
     runtime_entries: ResolvedVc<EvaluatableAssets>,
     fallback_page: ResolvedVc<DevHtmlAsset>,
     chunking_context: ResolvedVc<Box<dyn ChunkingContext>>,
-    intermediate_output_path: ResolvedFileSystemPath,
-    output_root: ResolvedFileSystemPath,
-    project_dir: ResolvedFileSystemPath,
+    intermediate_output_path: FileSystemPath,
+    output_root: FileSystemPath,
+    project_dir: FileSystemPath,
     data: ResolvedVc<RenderData>,
     debug: bool,
 }

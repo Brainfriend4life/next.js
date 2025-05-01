@@ -17,7 +17,7 @@ use super::{
 #[turbo_tasks::value(shared)]
 pub struct StaticAssetsContentSource {
     pub prefix: ResolvedVc<RcStr>,
-    pub dir: ResolvedFileSystemPath,
+    pub dir: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
@@ -31,7 +31,7 @@ impl StaticAssetsContentSource {
     #[turbo_tasks::function]
     pub async fn with_prefix(
         prefix: ResolvedVc<RcStr>,
-        dir: ResolvedFileSystemPath,
+        dir: FileSystemPath,
     ) -> Result<Vc<StaticAssetsContentSource>> {
         if cfg!(debug_assertions) {
             let prefix_string = prefix.await?;
@@ -84,13 +84,13 @@ impl ContentSource for StaticAssetsContentSource {
 
 #[turbo_tasks::value]
 struct StaticAssetsContentSourceItem {
-    path: ResolvedFileSystemPath,
+    path: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl StaticAssetsContentSourceItem {
     #[turbo_tasks::function]
-    pub fn new(path: ResolvedFileSystemPath) -> Vc<StaticAssetsContentSourceItem> {
+    pub fn new(path: FileSystemPath) -> Vc<StaticAssetsContentSourceItem> {
         StaticAssetsContentSourceItem { path }.cell()
     }
 }

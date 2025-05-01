@@ -15,14 +15,14 @@ use crate::{
 
 #[turbo_tasks::value]
 pub struct SourceMapReference {
-    from: ResolvedFileSystemPath,
-    file: ResolvedFileSystemPath,
+    from: FileSystemPath,
+    file: FileSystemPath,
 }
 
 #[turbo_tasks::value_impl]
 impl SourceMapReference {
     #[turbo_tasks::function]
-    pub fn new(from: ResolvedFileSystemPath, file: ResolvedFileSystemPath) -> Vc<Self> {
+    pub fn new(from: FileSystemPath, file: FileSystemPath) -> Vc<Self> {
         Self::cell(SourceMapReference { from, file })
     }
 }
