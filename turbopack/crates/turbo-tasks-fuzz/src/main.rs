@@ -82,9 +82,7 @@ async fn fuzz_fs_watcher(args: FsWatcher) -> anyhow::Result<()> {
         let project_fs = disk_file_system_operation(fs_root_rcstr.clone())
             .resolve_strongly_consistent()
             .await?;
-        let project_root = disk_file_system_root_operation(project_fs)
-            .resolve_strongly_consistent()
-            .await?;
+        let project_root = disk_file_system_root_operation(project_fs);
         create_directory_tree(&mut FxHashSet::default(), &fs_root, args.depth, args.width)?;
 
         project_fs.await?.start_watching(None).await?;
@@ -146,7 +144,7 @@ fn disk_file_system_operation(fs_root: RcStr) -> Vc<DiskFileSystem> {
 }
 
 #[turbo_tasks::function(operation)]
-fn disk_file_system_root_operation(fs: ResolvedVc<DiskFileSystem>) -> FileSystemPath {
+fn disk_file_system_root_operation(fs: ResolvedVc<DiskFileSystem>) -> Vc<FileSystemPath> {
     fs.root()
 }
 
@@ -155,7 +153,7 @@ async fn read_path(
     invalidations: TransientInstance<PathInvalidations>,
     path: FileSystemPath,
 ) -> anyhow::Result<()> {
-    let path_str = path.await?.path.clone();
+    let path_str = path.path.clone();
     invalidations.0.lock().unwrap().insert(path_str);
     let _ = path.track().await?;
     Ok(())
@@ -176,7 +174,7 @@ async fn read_all_paths_operation(
     ) -> anyhow::Result<()> {
         for child_id in 0..width {
             let child_name = RcStr::from(child_id.to_string());
-            let child_path = parent.join(child_name).to_resolved().await?;
+            let child_path = parent.join(child_name)?;
             if depth == 1 {
                 read_path(invalidations.clone(), *child_path).await?;
             } else {
