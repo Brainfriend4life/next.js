@@ -72,7 +72,6 @@ impl ChunkData {
         output_root: FileSystemPath,
         chunk: Vc<Box<dyn OutputAsset>>,
     ) -> Result<Vc<ChunkDataOption>> {
-        let output_root = output_root.await?;
         let path = chunk.path().await?;
         // The "path" in this case is the chunk's path, not the chunk item's path.
         // The difference is a chunk is a file served by the dev server, and an
