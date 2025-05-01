@@ -657,7 +657,7 @@ impl FileSystem for DiskFileSystem {
             let target_string: RcStr = relative_to_root_path.to_string_lossy().into();
             (
                 target_string.clone(),
-                FileSystemPath::new_normalized(fs_path.fs(), target_string)
+                FileSystemPath::new_normalized(fs_path.fs, target_string)
                     .get_type()
                     .await?,
             )
@@ -1516,19 +1516,18 @@ impl FileSystemPath {
     // case-insenstive filesystems, while read_dir gives you the "correct"
     // casing. We want to enforce "correct" casing to avoid broken builds on
     // Vercel deployments (case-sensitive).
-    pub async fn get_type(self: Vc<Self>) -> Result<Vc<FileSystemEntryType>> {
-        let this = self.await?;
-        if this.is_root() {
+    pub fn get_type(&self) -> Result<Vc<FileSystemEntryType>> {
+        if self.is_root() {
             return Ok(FileSystemEntryType::cell(FileSystemEntryType::Directory));
         }
-        let parent = self.parent().resolve().await?;
-        let dir_content = parent.raw_read_dir().await?;
+        let parent = self.parent()?;
+        let dir_content = parent.raw_read_dir()?;
         match &*dir_content {
             RawDirectoryContent::NotFound => {
                 Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
             }
             RawDirectoryContent::Entries(entries) => {
-                let (_, file_name) = this.split_file_name();
+                let (_, file_name) = self.split_file_name();
                 if let Some(entry) = entries.get(file_name) {
                     Ok(FileSystemEntryType::cell(entry.into()))
                 } else {
