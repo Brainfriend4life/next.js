@@ -898,7 +898,7 @@ where
                         Some(IssueProcessingPathItem::resolved_cell(
                             IssueProcessingPathItem {
                                 file_path: match file_path.into() {
-                                    Some(path) => Some(path.to_resolved().await?),
+                                    Some(path) => Some(path),
                                     None => None,
                                 },
                                 description: ResolvedVc::cell(RcStr::from(description.into())),
@@ -931,7 +931,7 @@ where
                         Some(IssueProcessingPathItem::resolved_cell(
                             IssueProcessingPathItem {
                                 file_path: match file_path.into() {
-                                    Some(path) => Some(path.to_resolved().await?),
+                                    Some(path) => Some(path),
                                     None => None,
                                 },
                                 description: ResolvedVc::cell(RcStr::from(description.into())),
