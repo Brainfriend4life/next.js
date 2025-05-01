@@ -532,8 +532,12 @@ impl ImportMap {
             .chain(lookup_rel_parent.into_iter())
             .chain(lookup.into_iter())
             .map(async |result| {
-                import_mapping_to_result(*result.try_join_into_self().await?, lookup_path, request)
-                    .await
+                import_mapping_to_result(
+                    *result.try_join_into_self().await?,
+                    lookup_path.clone(),
+                    request.clone(),
+                )
+                .await
             })
             .try_join()
             .await?;
