@@ -1,3 +1,3 @@
-import { getCat } from "lib";
+import { getCat } from 'lib'
 
-console.log(`I like ${getCat()}`);
+console.log(`I like ${getCat()}`)
