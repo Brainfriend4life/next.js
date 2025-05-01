@@ -1377,7 +1377,7 @@ impl Display for FileSystemPath {
 }
 
 pub async fn rebase(
-    fs_path: FileSystemPath,
+    fs_path: &FileSystemPath,
     old_base: FileSystemPath,
     new_base: FileSystemPath,
 ) -> Result<FileSystemPath> {
