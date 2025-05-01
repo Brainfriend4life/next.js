@@ -51,7 +51,7 @@ impl Issue for ResolvingIssue {
 
     #[turbo_tasks::function]
     fn file_path(&self) -> Vc<FileSystemPath> {
-        *self.file_path
+        self.file_path.clone().cell()
     }
 
     #[turbo_tasks::function]
@@ -103,7 +103,7 @@ impl Issue for ResolvingIssue {
         writeln!(
             detail,
             "Path where resolving has started: {context}",
-            context = self.file_path.to_string().await?
+            context = self.file_path.to_string()
         )?;
         writeln!(
             detail,
