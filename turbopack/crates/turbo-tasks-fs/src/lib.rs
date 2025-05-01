@@ -1632,6 +1632,7 @@ impl FileSystemPath {
     }
 }
 
+#[turbo_tasks::value_impl]
 impl ValueToString for FileSystemPath {
     #[turbo_tasks::function]
     async fn to_string(&self) -> Result<Vc<RcStr>> {
@@ -1644,14 +1645,14 @@ impl ValueToString for FileSystemPath {
 #[derive(Clone, Debug)]
 #[turbo_tasks::value(shared)]
 pub struct RealPathResult {
-    pub path: ResolvedFileSystemPath,
-    pub symlinks: Vec<ResolvedFileSystemPath>,
+    pub path: ResolvedVc<FileSystemPath>,
+    pub symlinks: Vec<ResolvedVc<FileSystemPath>>,
 }
 
 #[turbo_tasks::value_impl]
 impl RealPathResult {
     #[turbo_tasks::function]
-    pub fn path(&self) -> FileSystemPath {
+    pub fn path(&self) -> Vc<FileSystemPath> {
         *self.path
     }
 }
@@ -2520,22 +2521,24 @@ mod tests {
         crate::register();
 
         turbo_tasks_testing::VcStorage::with(async {
-            let fs = Vc::upcast::<Box<dyn FileSystem>>(VirtualFileSystem::new());
+            let fs = Vc::upcast::<Box<dyn FileSystem>>(VirtualFileSystem::new())
+                .to_resolved()
+                .await?;
 
             let path = FileSystemPath::new_normalized(fs, "".into());
-            assert_eq!(path.file_stem().await.unwrap().as_deref(), None);
+            assert_eq!(path.file_stem().unwrap().as_deref(), None);
 
             let path = FileSystemPath::new_normalized(fs, "foo/bar.txt".into());
-            assert_eq!(path.file_stem().await.unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "bar.txt".into());
-            assert_eq!(path.file_stem().await.unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "foo/bar".into());
-            assert_eq!(path.file_stem().await.unwrap().as_deref(), Some("bar"));
+            assert_eq!(path.file_stem().unwrap().as_deref(), Some("bar"));
 
             let path = FileSystemPath::new_normalized(fs, "foo/.bar".into());
-            assert_eq!(path.file_stem().await.unwrap().as_deref(), Some(".bar"));
+            assert_eq!(path.file_stem().unwrap().as_deref(), Some(".bar"));
 
             anyhow::Ok(())
         })
@@ -2548,7 +2551,9 @@ mod tests {
         crate::register();
 
         turbo_tasks_testing::VcStorage::with(async {
-            let fs = Vc::upcast::<Box<dyn FileSystem>>(VirtualFileSystem::new());
+            let fs = Vc::upcast::<Box<dyn FileSystem>>(VirtualFileSystem::new())
+                .to_resolved()
+                .await?;
 
             let mut long_str = String::new();
             for _i in 0..1000 {
