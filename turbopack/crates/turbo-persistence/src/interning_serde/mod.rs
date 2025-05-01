@@ -44,7 +44,16 @@ impl From<Vec<u32>> for LocalIdToGlobalId {
 }
 
 impl LocalIdToGlobalId {
-    fn read(reader: &mut impl Read) -> anyhow::Result<Self> {
+    pub fn write_to(&self, writer: &mut impl Write) -> anyhow::Result<()> {
+        let len = self.0.len() as u32;
+        writer.write_all(&len.to_le_bytes())?;
+        for id in self.0.iter() {
+            writer.write_all(&id.to_le_bytes())?;
+        }
+        Ok(())
+    }
+
+    fn read_from(reader: &mut impl Read) -> anyhow::Result<Self> {
         let mut global_ids = Vec::new();
 
         let mut len = [0; 4];
@@ -105,7 +114,7 @@ where
 {
     let mut reader = std::io::Cursor::new(slice);
 
-    let global_ids = LocalIdToGlobalId::read(&mut reader)?;
+    let global_ids = LocalIdToGlobalId::read_from(&mut reader)?;
 
     let de_map = restore_strings_with_in_memory_cache(global_ids.0, query_db)?;
 
