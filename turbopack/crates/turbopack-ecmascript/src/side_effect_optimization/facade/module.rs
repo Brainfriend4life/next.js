@@ -154,13 +154,9 @@ impl EcmascriptModuleFacadeModule {
             ModulePart::RenamedNamespace { .. } => (
                 EsmAssetReferences::empty().to_resolved().await?,
                 vec![
-                    EcmascriptModulePartReference::new_part(
-                        *self.module,
-                        ModulePart::evaluation(),
-                        *self.options,
-                    )
-                    .to_resolved()
-                    .await?,
+                    EcmascriptModulePartReference::new(*self.module, *self.options)
+                        .to_resolved()
+                        .await?,
                 ],
             ),
             ModulePart::RenamedExport { .. } => (
