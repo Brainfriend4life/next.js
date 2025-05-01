@@ -18,7 +18,7 @@ pub struct RawOutput {
 #[turbo_tasks::value_impl]
 impl OutputAsset for RawOutput {
     #[turbo_tasks::function]
-    fn path(&self) -> FileSystemPath {
+    fn path(&self) -> Vc<FileSystemPath> {
         *self.path
     }
 }
