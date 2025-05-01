@@ -443,7 +443,6 @@ impl DiskFileSystem {
     pub async fn to_sys_path(&self, fs_path: FileSystemPath) -> Result<PathBuf> {
         // just in case there's a windows unc path prefix we remove it with `dunce`
         let path = self.inner.root_path();
-        let fs_path = fs_path.await?;
         Ok(if fs_path.path.is_empty() {
             path.to_path_buf()
         } else {
@@ -666,7 +665,7 @@ impl FileSystem for DiskFileSystem {
             let link_path_unix: RcStr = sys_to_unix(&link_path_string_cow).into();
             (
                 link_path_unix.clone(),
-                fs_path.parent().join(link_path_unix).get_type().await?,
+                fs_path.parent()?.join(link_path_unix).get_type().await?,
             )
         };
 
@@ -1460,36 +1459,35 @@ impl FileSystemPath {
     }
 }
 
-#[turbo_tasks::value_impl]
 impl FileSystemPath {
     /// Reads content of a directory.
     ///
     /// DETERMINISM: Result is in random order. Either sort result or do not
     /// depend on the order.
-    #[turbo_tasks::function]
-    pub async fn read_dir(self: Vc<Self>) -> Result<Vc<DirectoryContent>> {
-        let this = self.await?;
+    pub fn read_dir(&self) -> Vc<DirectoryContent> {
+        read_dir(self.clone())
+    }
+}
 
-        match &*this.fs.raw_read_dir(self).await? {
-            RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
-            RawDirectoryContent::Entries(entries) => {
-                let mut normalized_entries = AutoMap::new();
-                for (name, entry) in entries {
-                    let entry = match entry {
-                        RawDirectoryEntry::File => DirectoryEntry::File(this.join(name.clone())),
-                        RawDirectoryEntry::Directory => {
-                            DirectoryEntry::Directory(this.join(name.clone()))
-                        }
-                        RawDirectoryEntry::Symlink => {
-                            DirectoryEntry::Symlink(this.join(name.clone()))
-                        }
-                        RawDirectoryEntry::Other => DirectoryEntry::Other(this.join(name.clone())),
-                        RawDirectoryEntry::Error => DirectoryEntry::Error,
-                    };
-                    normalized_entries.insert(name.clone(), entry);
-                }
-                Ok(DirectoryContent::new(normalized_entries))
+#[turbo_tasks::function]
+async fn read_dir(path: FileSystemPath) -> Result<Vc<DirectoryContent>> {
+    match &*path.fs.raw_read_dir(path).await? {
+        RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
+        RawDirectoryContent::Entries(entries) => {
+            let mut normalized_entries = AutoMap::new();
+            for (name, entry) in entries {
+                let entry = match entry {
+                    RawDirectoryEntry::File => DirectoryEntry::File(path.join(name.clone())),
+                    RawDirectoryEntry::Directory => {
+                        DirectoryEntry::Directory(path.join(name.clone()))
+                    }
+                    RawDirectoryEntry::Symlink => DirectoryEntry::Symlink(path.join(name.clone())),
+                    RawDirectoryEntry::Other => DirectoryEntry::Other(path.join(name.clone())),
+                    RawDirectoryEntry::Error => DirectoryEntry::Error,
+                };
+                normalized_entries.insert(name.clone(), entry);
             }
+            Ok(DirectoryContent::new(normalized_entries))
         }
     }
 }
