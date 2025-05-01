@@ -37,11 +37,10 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Context, Result};
-use auto_hash_map::{AutoMap, AutoSet};
+use auto_hash_map::AutoMap;
 use bitflags::bitflags;
 use dunce::simplified;
 use glob::Glob;
-use indexmap::IndexSet;
 use invalidator_map::InvalidatorMap;
 use jsonc_parser::{parse_to_serde_value, ParseOptions};
 use mime::Mime;
@@ -1317,11 +1316,11 @@ impl FileSystemPath {
     }
 
     pub async fn is_inside(&self, other: FileSystemPath) -> Result<Vc<bool>> {
-        Ok(Vc::cell(self.is_inside_ref(&*other.await?)))
+        Ok(Vc::cell(self.is_inside_ref(&other)))
     }
 
     pub async fn is_inside_or_equal(&self, other: FileSystemPath) -> Result<Vc<bool>> {
-        Ok(Vc::cell(self.is_inside_or_equal_ref(&*other.await?)))
+        Ok(Vc::cell(self.is_inside_or_equal_ref(&other)))
     }
 
     /// Creates a new [`FileSystemPath`] like `self` but with the given
@@ -1473,12 +1472,12 @@ async fn read_dir(path: FileSystemPath) -> Result<Vc<DirectoryContent>> {
             let mut normalized_entries = AutoMap::new();
             for (name, entry) in entries {
                 let entry = match entry {
-                    RawDirectoryEntry::File => DirectoryEntry::File(path.join(name.clone())),
+                    RawDirectoryEntry::File => DirectoryEntry::File(path.join(name.clone())?),
                     RawDirectoryEntry::Directory => {
-                        DirectoryEntry::Directory(path.join(name.clone()))
+                        DirectoryEntry::Directory(path.join(name.clone())?)
                     }
-                    RawDirectoryEntry::Symlink => DirectoryEntry::Symlink(path.join(name.clone())),
-                    RawDirectoryEntry::Other => DirectoryEntry::Other(path.join(name.clone())),
+                    RawDirectoryEntry::Symlink => DirectoryEntry::Symlink(path.join(name.clone())?),
+                    RawDirectoryEntry::Other => DirectoryEntry::Other(path.join(name.clone())?),
                     RawDirectoryEntry::Error => DirectoryEntry::Error,
                 };
                 normalized_entries.insert(name.clone(), entry);
@@ -1603,7 +1602,7 @@ async fn get_type(path: FileSystemPath) -> Result<Vc<FileSystemEntryType>> {
         return Ok(FileSystemEntryType::cell(FileSystemEntryType::Directory));
     }
     let parent = path.parent();
-    let dir_content = parent.raw_read_dir()?;
+    let dir_content = parent.raw_read_dir().await?;
     match &*dir_content {
         RawDirectoryContent::NotFound => {
             Ok(FileSystemEntryType::cell(FileSystemEntryType::NotFound))
@@ -2254,9 +2253,7 @@ pub enum RawDirectoryEntry {
     Error,
 }
 
-#[derive(
-    Hash, Clone, Copy, Debug, PartialEq, Eq, TraceRawVcs, Serialize, Deserialize, NonLocalValue,
-)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq, TraceRawVcs, Serialize, Deserialize, NonLocalValue)]
 pub enum DirectoryEntry {
     File(FileSystemPath),
     Directory(FileSystemPath),
@@ -2270,7 +2267,7 @@ pub enum DirectoryEntry {
 /// `DirectoryEntry::Directory`.
 impl DirectoryEntry {
     pub async fn resolve_symlink(self) -> Result<Self> {
-        if let DirectoryEntry::Symlink(symlink) = self {
+        if let DirectoryEntry::Symlink(symlink) = &self {
             let real_path = symlink.realpath()?;
             match *real_path.get_type().await? {
                 FileSystemEntryType::Directory => Ok(DirectoryEntry::Directory(real_path)),
