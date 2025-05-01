@@ -7,7 +7,7 @@ use smallvec::SmallVec;
 use tracing::Span;
 use turbo_persistence::interning_serde::{self, RcStrToLocalId};
 use turbo_rcstr::RcStr;
-use turbo_tasks::{backend::CachedTaskType, turbo_tasks_scope, SessionId, TaskId};
+use turbo_tasks::{backend::CachedTaskType, turbo_tasks_scope, SessionId, StringId, TaskId};
 
 use crate::{
     backend::{AnyOperation, TaskDataCategory},
@@ -65,6 +65,7 @@ fn pot_de_symbol_list<'l>() -> pot::de::SymbolList<'l> {
 const META_KEY_OPERATIONS: u32 = 0;
 const META_KEY_NEXT_FREE_TASK_ID: u32 = 1;
 const META_KEY_SESSION_ID: u32 = 2;
+const META_KEY_STRING_ID: u32 = 3;
 
 struct IntKey([u8; 4]);
 
@@ -107,6 +108,11 @@ impl<T: KeyValueDatabase> KeyValueDatabaseBackingStorage<T> {
             drop(tx);
             Ok(r)
         }
+    }
+
+    fn next_string_id(&self) -> StringId {
+        StringId::try_from(get_infra_u32(&self.database, META_KEY_STRING_ID).unwrap_or(0) + 1)
+            .unwrap()
     }
 }
 
