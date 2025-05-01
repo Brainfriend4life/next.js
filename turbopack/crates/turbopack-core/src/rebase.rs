@@ -40,12 +40,14 @@ impl RebasedAsset {
 #[turbo_tasks::value_impl]
 impl OutputAsset for RebasedAsset {
     #[turbo_tasks::function]
-    fn path(&self) -> Vc<FileSystemPath> {
-        FileSystemPath::rebase(
-            self.module.ident().path(),
+    async fn path(&self) -> Result<Vc<FileSystemPath>> {
+        Ok(FileSystemPath::rebase(
+            &*self.module.ident().path().await?,
             self.input_dir.clone(),
             self.output_dir.clone(),
         )
+        .await?
+        .cell())
     }
 
     #[turbo_tasks::function]
