@@ -1321,7 +1321,7 @@ pub enum PatternMatch {
 
 impl PatternMatch {
     pub fn path(&self) -> FileSystemPath {
-        match *self {
+        match self {
             PatternMatch::File(_, path) | PatternMatch::Directory(_, path) => path,
         }
     }
