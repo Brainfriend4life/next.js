@@ -1193,7 +1193,7 @@ impl FileSystemPath {
 }
 
 #[turbo_tasks::value(transparent)]
-pub struct FileSystemPathOption(Option<ResolvedFileSystemPath>);
+pub struct FileSystemPathOption(Option<FileSystemPath>);
 
 #[turbo_tasks::value_impl]
 impl FileSystemPathOption {
@@ -1540,7 +1540,7 @@ impl FileSystemPath {
     #[turbo_tasks::function]
     pub async fn realpath_with_links(self: ResolvedVc<Self>) -> Result<Vc<RealPathResult>> {
         let mut current_vc = self;
-        let mut symlinks: IndexSet<ResolvedFileSystemPath> = IndexSet::new();
+        let mut symlinks: IndexSet<FileSystemPath> = IndexSet::new();
         let mut visited: AutoSet<RcStr> = AutoSet::new();
         // Pick some arbitrary symlink depth limit... similar to the ELOOP logic for realpath(3).
         // SYMLOOP_MAX is 40 for Linux: https://unix.stackexchange.com/q/721724
@@ -2260,10 +2260,10 @@ pub enum RawDirectoryEntry {
     Hash, Clone, Copy, Debug, PartialEq, Eq, TraceRawVcs, Serialize, Deserialize, NonLocalValue,
 )]
 pub enum DirectoryEntry {
-    File(ResolvedFileSystemPath),
-    Directory(ResolvedFileSystemPath),
-    Symlink(ResolvedFileSystemPath),
-    Other(ResolvedFileSystemPath),
+    File(FileSystemPath),
+    Directory(FileSystemPath),
+    Symlink(FileSystemPath),
+    Other(FileSystemPath),
     Error,
 }
 
@@ -2472,7 +2472,7 @@ mod tests {
         crate::register();
 
         turbo_tasks_testing::VcStorage::with(async {
-            let fs = Vc::upcast(VirtualFileSystem::new());
+            let fs = Vc::upcast(VirtualFileSystem::new()).to_resolved().await?;
 
             let path_txt = FileSystemPath::new_normalized(fs, "foo/bar.txt".into());
 
@@ -2494,10 +2494,7 @@ mod tests {
             assert_eq!(path_no_slash_no_ext.path.as_str(), "bar");
 
             let path_no_slash_new_ext = path_no_slash_no_ext.with_extension("json".into());
-            assert_eq!(
-                path_no_slash_new_ext.await.unwrap().path.as_str(),
-                "bar.json"
-            );
+            assert_eq!(path_no_slash_new_ext.path.as_str(), "bar.json");
 
             anyhow::Ok(())
         })
@@ -2551,10 +2548,7 @@ mod tests {
 
             // does not change the path (returns exact same Vc) if the file name is short
             let path = FileSystemPath::new_normalized(fs, format!("{long_str}/short.ext").into());
-            assert_eq!(
-                path.truncate_file_name_with_hash_vc().resolve().await?,
-                path,
-            );
+            assert_eq!(path.truncate_file_name_with_hash_vc()?, path,);
 
             // truncates and adds hash so that the file name length equals MAX_SAFE_FILE_NAME_LENGTH
             let path = FileSystemPath::new_normalized(fs, format!("path/{long_str}.ext").into());
@@ -2569,7 +2563,7 @@ mod tests {
 
             // an extension that's too long should fail
             let path = FileSystemPath::new_normalized(fs, format!("path/foo.{long_str}").into());
-            assert!(path.truncate_file_name_with_hash_vc().await.is_err());
+            assert!(path.truncate_file_name_with_hash_vc().is_err());
 
             anyhow::Ok(())
         })
