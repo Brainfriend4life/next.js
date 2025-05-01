@@ -601,7 +601,7 @@ impl FileSystem for DiskFileSystem {
     #[turbo_tasks::function(fs)]
     async fn read_link(&self, fs_path: FileSystemPath) -> Result<Vc<LinkContent>> {
         mark_session_dependent();
-        let full_path = self.to_sys_path(fs_path).await?;
+        let full_path = self.to_sys_path(fs_path.clone()).await?;
         self.inner.register_read_invalidator(&full_path)?;
 
         let _lock = self.inner.lock_path(&full_path).await;
@@ -655,7 +655,7 @@ impl FileSystem for DiskFileSystem {
             let target_string: RcStr = relative_to_root_path.to_string_lossy().into();
             (
                 target_string.clone(),
-                FileSystemPath::new_normalized(fs_path.fs, target_string)?
+                FileSystemPath::new_normalized(fs_path.fs, target_string)
                     .get_type()
                     .await?,
             )
@@ -1449,8 +1449,12 @@ impl FileSystemPath {
         self.realpath_with_links().path()
     }
 
-    pub fn rebase(&self, old_base: FileSystemPath, new_base: FileSystemPath) -> FileSystemPath {
-        rebase(self, old_base, new_base)
+    pub async fn rebase(
+        &self,
+        old_base: FileSystemPath,
+        new_base: FileSystemPath,
+    ) -> Result<FileSystemPath> {
+        rebase(self, old_base, new_base).await
     }
 }
 
