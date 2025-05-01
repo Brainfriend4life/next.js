@@ -108,9 +108,15 @@ impl AttachedFileSystem {
                 .root()
                 .resolve()
                 .await?
+                .await?
                 .join(inner_path.into())
         } else {
-            this.root_fs.root().resolve().await?.join(path.path.clone())
+            this.root_fs
+                .root()
+                .resolve()
+                .await?
+                .await?
+                .join(path.path.clone())
         })
     }
 }
