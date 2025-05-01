@@ -87,8 +87,12 @@ async fn fuzz_fs_watcher(args: FsWatcher) -> anyhow::Result<()> {
 
         project_fs.await?.start_watching(None).await?;
 
-        let read_all_paths_op =
-            read_all_paths_operation(invalidations.clone(), project_root, args.depth, args.width);
+        let read_all_paths_op = read_all_paths_operation(
+            invalidations.clone(),
+            (*project_root.resolve_strongly_consistent().await?.await?).clone(),
+            args.depth,
+            args.width,
+        );
         read_all_paths_op.read_strongly_consistent().await?;
         {
             let mut invalidations = invalidations.0.lock().unwrap();
@@ -176,7 +180,7 @@ async fn read_all_paths_operation(
             let child_name = RcStr::from(child_id.to_string());
             let child_path = parent.join(child_name)?;
             if depth == 1 {
-                read_path(invalidations.clone(), *child_path).await?;
+                read_path(invalidations.clone(), child_path).await?;
             } else {
                 Box::pin(read_all_paths_inner(
                     invalidations.clone(),
