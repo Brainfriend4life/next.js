@@ -1300,7 +1300,7 @@ impl FileSystemPath {
     }
 
     pub fn read_glob(&self, glob: Vc<Glob>, include_dot_files: bool) -> Vc<ReadGlobResult> {
-        read_glob(self, glob, include_dot_files)
+        read_glob(self.clone(), glob, include_dot_files)
     }
 
     pub fn root(&self) -> Vc<Self> {
@@ -1359,7 +1359,7 @@ impl FileSystemPath {
     pub fn truncate_file_name_with_hash_vc(&self) -> Result<FileSystemPath> {
         Ok(match self.truncate_file_name_with_hash()? {
             Cow::Borrowed(_) => self.clone(),
-            Cow::Owned(path) => path.cell(),
+            Cow::Owned(path) => path,
         })
     }
 }
@@ -1466,7 +1466,7 @@ impl FileSystemPath {
 
 #[turbo_tasks::function]
 async fn read_dir(path: FileSystemPath) -> Result<Vc<DirectoryContent>> {
-    match &*path.fs.raw_read_dir(path).await? {
+    match &*path.fs.raw_read_dir(path.clone()).await? {
         RawDirectoryContent::NotFound => Ok(DirectoryContent::not_found()),
         RawDirectoryContent::Entries(entries) => {
             let mut normalized_entries = AutoMap::new();
